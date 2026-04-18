@@ -31,6 +31,7 @@ bash py0c/ctest.sh    # C VM tests
 - py0c uses local `ast.py` and `operator.py` via `sys.path.insert(0, ...)` at line 11-12
 - QD format: 4-field text IR (op arg1 arg2 result)
 - Target files compile: `py/hello.py`, `py/fact.py`, `py/json.py`, `qd0vm.py`
+- CLASS support: VM can compile classes, class instantiation works, but attribute/method access has issues
 
 ## Entry points
 
