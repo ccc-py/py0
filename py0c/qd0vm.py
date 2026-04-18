@@ -11,74 +11,72 @@ import re
 # 詞法分析：將一行解析成 (op, arg1, arg2, result)
 # ─────────────────────────────────────────────
 
-def parse_value(s: str):
-    """將字串 token 轉換成 Python 值。"""
+def parse_value(s):
     if s == '_': return None
-    if s in ('True', 'true'): return True
-    if s in ('False', 'false'): return False
-    if s in ('None', 'null'): return None
+    if s == 'True' or s == 'true': return True
+    if s == 'False' or s == 'false': return False
+    if s == 'None' or s == 'null': return None
     
-    # 處理字串字面值 (支援 \n 等轉義字元，並完美保護中文字)
-    if (s.startswith("'") and s.endswith("'")) or \
-       (s.startswith('"') and s.endswith('"')):
+    # 移除反斜線換行，改為純邏輯運算
+    is_sq = s.startswith("'") and s.endswith("'")
+    is_dq = s.startswith('"') and s.endswith('"')
+    if is_sq or is_dq:
         val = s[1:-1]
         try:
-            # 完美的 UTF-8 轉義還原法：
-            # 1. 取得原始 byte 序列 (包含 \n 和中文字的 UTF-8 bytes)
-            # 2. unicode_escape: 解析 \n，但此時中文 bytes 會被當作 Latin-1
-            # 3. 重新 encode 為 latin-1: 還原出乾淨的 UTF-8 bytes
-            # 4. 重新 decode 為 utf-8: 還原成正確的中文
             return val.encode('utf-8').decode('unicode_escape').encode('latin-1').decode('utf-8')
-        except Exception:
-            # 萬一發生異常，手動替換常見跳脫字元作為最終保護
+        except Exception as e:
             return val.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r')
             
-    try: return int(s)
-    except ValueError: pass
-    try: return float(s)
-    except ValueError: pass
+    try: 
+        return int(s)
+    except ValueError: 
+        pass
     
-    return s  # 識別符（變數名 / 標籤名）
+    try: 
+        return float(s)
+    except ValueError: 
+        pass
+    
+    return s
 
-def tokenize_line(line: str):
-    """去掉注釋，切出 token list。支援帶引號的字串中有空白。"""
+def tokenize_line(line):
     in_q = False
     q_char = ''
     clean = []
     i = 0
-    while i < len(line):
+    n = len(line)
+    while i < n:
         c = line[i]
         if in_q:
             if c == q_char:
                 in_q = False
             clean.append(c)
         else:
-            if c in ('"', "'"):
+            if c == '"' or c == "'":
                 in_q = True
                 q_char = c
                 clean.append(c)
             elif c == ';':
-                break  # 注釋開始
+                break
             else:
                 clean.append(c)
-        i += 1
-    line = ''.join(clean).strip()
-    if not line:
+        i = i + 1
+    
+    clean_str = ''.join(clean).strip()
+    if not clean_str:
         return []
 
     tokens = []
-    pat = r"""'[^']*'|"[^"]*"|\S+"""
-    for m in re.finditer(pat, line):
+    pat = r"'[^']*'|\"[^\"]*\"|\S+"
+    for m in re.finditer(pat, clean_str):
         tokens.append(m.group())
     return tokens
 
-def parse_line(line: str):
-    """回傳 (op, arg1_raw, arg2_raw, result_raw) 或 None。"""
+def parse_line(line):
     line = line.strip()
     if not line or line.startswith(';'):
         return None
 
-    # 標籤定義： L_foo::
     if re.match(r'^[A-Za-z_]\w*::$', line):
         label = line[:-2]
         return ('LABEL', label, None, None)
@@ -101,30 +99,50 @@ def parse_line(line: str):
 # ─────────────────────────────────────────────
 
 class Instruction:
-    __slots__ = ('op', 'arg1', 'arg2', 'result', 'lineno')
     def __init__(self, op, arg1, arg2, result, lineno):
-        self.op, self.arg1, self.arg2, self.result, self.lineno = op, arg1, arg2, result, lineno
+        self.op = op
+        self.arg1 = arg1
+        self.arg2 = arg2
+        self.result = result
+        self.lineno = lineno
     def __repr__(self):
-        return f"<{self.op} {self.arg1} {self.arg2} {self.result}>"
+        return "<" + str(self.op) + " " + str(self.arg1) + " " + str(self.arg2) + " " + str(self.result) + ">"
 
-def load_program(path: str):
+def load_program(path):
     instructions = []
-    with open(path, encoding='utf-8') as f:
-        for lineno, raw in enumerate(f, 1):
-            parsed = parse_line(raw)
-            if parsed is None: continue
-            instructions.append(Instruction(*parsed, lineno))
+    f = open(path, 'r')
+    lineno = 1
+    for raw in f:
+        parsed = parse_line(raw)
+        if parsed is not None:
+            op = parsed[0]
+            arg1 = parsed[1]
+            arg2 = parsed[2]
+            result = parsed[3]
+            instructions.append(Instruction(op, arg1, arg2, result, lineno))
+        lineno = lineno + 1
+    f.close()
 
-    label_map = {inst.arg1: idx for idx, inst in enumerate(instructions) if inst.op == 'LABEL'}
+    label_map = {}
+    idx = 0
+    for inst in instructions:
+        if inst.op == 'LABEL':
+            label_map[inst.arg1] = idx
+        idx = idx + 1
 
     function_map = {}
     func_stack = []
-    for idx, inst in enumerate(instructions):
-        if inst.op == 'FUNCTION': func_stack.append((inst.result, idx))
+    idx = 0
+    for inst in instructions:
+        if inst.op == 'FUNCTION': 
+            func_stack.append((inst.result, idx))
         elif inst.op == 'FUNCTION_END':
-            if func_stack:
-                fname, start = func_stack.pop()
+            if len(func_stack) > 0:
+                popped = func_stack.pop()
+                fname = popped[0]
+                start = popped[1]
                 function_map[fname] = (start, idx)
+        idx = idx + 1
 
     return instructions, label_map, function_map
 
@@ -138,26 +156,30 @@ class Frame:
         self.instructions = instructions
         self.label_map = label_map
         self.globals_env = globals_env
-        self.locals: dict = {}
-        self.pc: int = 0
+        self.locals = {}
+        self.pc = 0
         self.return_value = None
         
-        # 緩衝區 (改為 Stack 邏輯，支援無限巢狀)
-        self.arg_buffer: list = []     
-        self.list_buffer: list = []    
-        self.dict_buffer: list = []    
+        self.arg_buffer = []     
+        self.list_buffer = []    
+        self.dict_buffer = []    
 
-    def resolve(self, token: str):
-        if token is None or token == '_': return None
-        if token in self.locals: return self.locals[token]
-        if token in self.globals_env: return self.globals_env[token]
+    def resolve(self, token):
+        if token is None or token == '_': 
+            return None
+        if token in self.locals: 
+            return self.locals[token]
+        if token in self.globals_env: 
+            return self.globals_env[token]
         val = parse_value(token)
-        if isinstance(val, str) and val == token:
-            raise NameError(f"未定義的名稱: {token!r}")
+        if type(val) is str and val == token:
+            print("未定義的名稱: " + str(token))
+            sys.exit(1)
         return val
 
-    def set_local(self, name: str, value):
-        if name and name != '_': self.locals[name] = value
+    def set_local(self, name, value):
+        if name and name != '_': 
+            self.locals[name] = value
 
 # ─────────────────────────────────────────────
 # VM 主體
@@ -169,7 +191,7 @@ class QD0VM:
         self.label_map = label_map
         self.function_map = function_map
 
-        self.globals: dict = {
+        self.globals = {
             'print': print,
             'len': len,
             'range': range,
@@ -180,14 +202,15 @@ class QD0VM:
             'list': list,
             'dict': dict,
             'sum': sum,
-            'format': format, # 支援小數點格式化 (例如 :.2f)
+            'format': format,
             'True': True,
             'False': False,
             'None': None,
         }
 
-        for fname, (start, end) in function_map.items():
-            self.globals[fname] = self._make_function(fname, start, end)
+        for fname in function_map:
+            start_end = function_map[fname]
+            self.globals[fname] = self._make_function(fname, start_end[0], start_end[1])
 
     def _make_function(self, fname, start_idx, end_idx):
         vm = self
@@ -203,12 +226,14 @@ class QD0VM:
 
         while pc <= end_idx:
             inst = self.instructions[pc]
-            if inst.op == 'ENTER_SCOPE': pc += 1; continue
+            if inst.op == 'ENTER_SCOPE': 
+                pc = pc + 1
+                continue
             if inst.op == 'PARAM':
                 if param_idx < len(args):
                     frame.locals[inst.result] = args[param_idx]
-                param_idx += 1
-                pc += 1
+                param_idx = param_idx + 1
+                pc = pc + 1
                 continue
             break
 
@@ -218,43 +243,64 @@ class QD0VM:
     def run(self):
         frame = Frame('__main__', self.instructions, self.label_map, self.globals)
         frame.pc = 0
-        self._run_frame(frame, len(self.instructions) - 1, top_level_only=True)
+        self._run_frame(frame, len(self.instructions) - 1, True)
 
-    def _run_frame(self, frame: Frame, end_idx: int, top_level_only=False):
-        func_ranges = set(i for s, e in self.function_map.values() for i in range(s, e + 1))
+    def _run_frame(self, frame, end_idx, top_level_only=False):
+        func_ranges = set()
+        for fname in self.function_map:
+            s_e = self.function_map[fname]
+            s = s_e[0]
+            e = s_e[1]
+            for i in range(s, e + 1):
+                func_ranges.add(i)
 
         while frame.pc <= end_idx:
             idx = frame.pc
             if top_level_only and idx in func_ranges:
-                frame.pc += 1; continue
+                frame.pc = frame.pc + 1
+                continue
 
             inst = self.instructions[idx]
             op = inst.op
 
             if op in ('FUNCTION', 'FUNCTION_END', 'ENTER_SCOPE', 'EXIT_SCOPE', 'PARAM', 'LABEL'):
-                frame.pc += 1; continue
+                frame.pc = frame.pc + 1
+                continue
 
             try:
                 ret = self._exec(inst, frame)
             except Exception as e:
-                print(f"[執行錯誤] 第 {inst.lineno} 行 {inst}: {e}", file=sys.stderr)
+                print("[執行錯誤] 第 " + str(inst.lineno) + " 行 " + str(inst) + ": " + str(e))
                 sys.exit(1)
 
-            if ret and ret[0] == 'RETURN': return ret[1]
+            if ret and ret[0] == 'RETURN': 
+                return ret[1]
             if ret and ret[0] == 'JUMP':
-                if ret[1] not in self.label_map: raise RuntimeError(f"未知標籤: {ret[1]!r}")
+                if ret[1] not in self.label_map: 
+                    print("未知標籤: " + str(ret[1]))
+                    sys.exit(1)
                 frame.pc = self.label_map[ret[1]]
                 continue
 
-            frame.pc += 1
+            frame.pc = frame.pc + 1
         return frame.return_value
 
-    def _exec(self, inst: Instruction, frame: Frame):
-        op, a1, a2, r = inst.op, inst.arg1, inst.arg2, inst.result
-        V = lambda t: None if t in (None, '_') else frame.resolve(t)
-        lit = lambda t: parse_value(t) if t not in (None, '_') else None
+    def _exec(self, inst, frame):
+        op = inst.op
+        a1 = inst.arg1
+        a2 = inst.arg2
+        r = inst.result
 
-        # ── Load / Store ──
+        def V(t):
+            if t is None or t == '_':
+                return None
+            return frame.resolve(t)
+
+        def lit(t):
+            if t is None or t == '_':
+                return None
+            return parse_value(t)
+
         if op == 'LOAD_CONST': frame.set_local(r, lit(a1))
         elif op == 'LOAD_NAME': frame.set_local(r, V(a1))
         elif op == 'LOAD_ATTR': frame.set_local(r, getattr(V(a1), a2))
@@ -262,30 +308,43 @@ class QD0VM:
             frame.globals_env[r] = V(a1)
             frame.set_local(r, V(a1))
 
-        # ── 容器操作 (List/Dict/Subscript) - 支援巢狀堆疊 ──
         elif op == 'DICT_INSERT':
             frame.dict_buffer.append((V(a1), V(a2)))
 
         elif op == 'BUILD_DICT':
             count = int(lit(a1))
-            items = frame.dict_buffer[-count:] # 取出最後 count 個
+            items = frame.dict_buffer[-count:] 
             del frame.dict_buffer[-count:]
-            frame.set_local(r, {k: v for k, v in items})
+            d = {}
+            for kv in items:
+                d[kv[0]] = kv[1]
+            frame.set_local(r, d)
             
         elif op == 'LIST_APPEND':
             frame.list_buffer.append((int(lit(a2)), V(a1)))
 
         elif op == 'BUILD_LIST':
             count = int(lit(a1))
-            items_raw = frame.list_buffer[-count:] # 取出最後 count 個
+            items_raw = frame.list_buffer[-count:] 
             del frame.list_buffer[-count:]
-            ordered = sorted(items_raw, key=lambda x: x[0])
-            frame.set_local(r, [v for _, v in ordered])
+            
+            # 使用基礎氣泡排序取代 sorted(key=lambda)，相容基本 AST
+            n_items = len(items_raw)
+            for i in range(n_items):
+                for j in range(0, n_items - i - 1):
+                    if items_raw[j][0] > items_raw[j + 1][0]:
+                        tmp = items_raw[j]
+                        items_raw[j] = items_raw[j + 1]
+                        items_raw[j + 1] = tmp
+                        
+            lst = []
+            for item in items_raw:
+                lst.append(item[1])
+            frame.set_local(r, lst)
 
         elif op == 'SUBSCRIPT':
             frame.set_local(r, V(a1)[V(a2)])
 
-        # ── Arithmetic ──
         elif op == 'ADD': frame.set_local(r, V(a1) + V(a2))
         elif op == 'SUB': frame.set_local(r, V(a1) - V(a2))
         elif op == 'MUL': frame.set_local(r, V(a1) * V(a2))
@@ -293,7 +352,6 @@ class QD0VM:
         elif op == 'MOD': frame.set_local(r, V(a1) % V(a2))
         elif op == 'NEG': frame.set_local(r, -V(a1))
 
-        # ── Comparison & Logical (補齊) ──
         elif op == 'CMP_EQ': frame.set_local(r, V(a1) == V(a2))
         elif op == 'CMP_NE': frame.set_local(r, V(a1) != V(a2))
         elif op == 'CMP_LT': frame.set_local(r, V(a1) < V(a2))
@@ -304,60 +362,77 @@ class QD0VM:
         elif op == 'AND': frame.set_local(r, V(a1) and V(a2))
         elif op == 'NOT': frame.set_local(r, not V(a1))
 
-        # ── Control Flow ──
         elif op == 'JUMP': return ('JUMP', a1)
         elif op == 'BRANCH_IF_TRUE':
             if V(a1): return ('JUMP', r)
         elif op == 'BRANCH_IF_FALSE':
             if not V(a1): return ('JUMP', r)
 
-        # ── Iteration ──
         elif op == 'GET_ITER':
             frame.set_local(r, iter(V(a1)))
         elif op == 'ITER_NEXT':
             try:
                 frame.set_local(r, next(V(a1)))
-                frame.locals[f'__exhaust_{a1}'] = False
+                frame.locals['__exhaust_' + str(a1)] = False
             except StopIteration:
-                frame.locals[f'__exhaust_{a1}'] = True
+                frame.locals['__exhaust_' + str(a1)] = True
         elif op == 'BRANCH_IF_EXHAUST':
-            if frame.locals.get(f'__exhaust_{a1}', False):
+            if frame.locals.get('__exhaust_' + str(a1), False):
                 return ('JUMP', r)
 
-        # ── Function / Call ──
         elif op == 'ARG_PUSH':
             frame.arg_buffer.append((lit(a2), V(a1)))
 
         elif op == 'CALL':
             func = V(a1)
-            argc = int(lit(a2)) if a2 and a2 != '_' else len(frame.arg_buffer)
-            raw_args = frame.arg_buffer[-argc:] # 取出最後 argc 個參數
+            if a2 and a2 != '_':
+                argc = int(lit(a2))
+            else:
+                argc = len(frame.arg_buffer)
+            raw_args = frame.arg_buffer[-argc:] 
             del frame.arg_buffer[-argc:]
-            ordered = sorted(raw_args, key=lambda x: (x[0] is None, x[0]))
-            args = [v for _, v in ordered]
+            
+            # 使用基礎氣泡排序取代 sorted(key=lambda)
+            n_args = len(raw_args)
+            for i in range(n_args):
+                for j in range(0, n_args - i - 1):
+                    idx1 = raw_args[j][0]
+                    idx2 = raw_args[j + 1][0]
+                    val1 = idx1
+                    if idx1 is None: 
+                        val1 = 999999
+                    val2 = idx2
+                    if idx2 is None: 
+                        val2 = 999999
+                    if val1 > val2:
+                        tmp = raw_args[j]
+                        raw_args[j] = raw_args[j + 1]
+                        raw_args[j + 1] = tmp
+                        
+            args = []
+            for item in raw_args:
+                args.append(item[1])
             frame.set_local(r, func(*args))
 
         elif op == 'RETURN':
             return ('RETURN', V(a1))
 
         else:
-            raise RuntimeError(f"未知指令: {op!r}")
+            print("未知指令: " + str(op))
+            sys.exit(1)
+            
         return None
-
-# ─────────────────────────────────────────────
-# 入口點
-# ─────────────────────────────────────────────
 
 def main():
     if len(sys.argv) < 2:
-        print("用法: python qd0vm.py <file.qd>", file=sys.stderr)
+        print("用法: python qd0vm.py <file.qd>")
         sys.exit(1)
 
     path = sys.argv[1]
     try:
         instructions, label_map, function_map = load_program(path)
     except FileNotFoundError:
-        print(f"找不到檔案: {path!r}", file=sys.stderr)
+        print("找不到檔案: " + str(path))
         sys.exit(1)
 
     vm = QD0VM(instructions, label_map, function_map)

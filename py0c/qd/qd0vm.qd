@@ -1,0 +1,2444 @@
+LOAD_CONST       '\nqd0vm.py — QD0 IR Virtual Machine\n用法: python qd0vm.py <file.qd>\n' _            t0            ; load string
+IMPORT           sys          _            _             ; import sys
+IMPORT           re           _            _             ; import re
+FUNCTION         _            _            parse_value   ; function parse_value
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            s           
+LOAD_NAME        s            _            t1            ; load s
+LOAD_CONST       '_'          _            t2            ; load string
+CMP_EQ           t1           t2           t3          
+BRANCH_IF_FALSE  t3           _            L_else0       ; if not test, go to else
+LOAD_CONST       None         _            t4            ; load None
+RETURN           t4           _            _             ; return value
+JUMP             L_end1       _            _             ; skip else
+L_else0::
+L_end1::
+LOAD_NAME        s            _            t5            ; load s
+LOAD_CONST       'True'       _            t6            ; load string
+CMP_EQ           t5           t6           t7          
+LOAD_NAME        s            _            t8            ; load s
+LOAD_CONST       'true'       _            t9            ; load string
+CMP_EQ           t8           t9           t10         
+OR               t7           t10          t11         
+BRANCH_IF_FALSE  t11          _            L_else2       ; if not test, go to else
+LOAD_CONST       True         _            t12           ; load True
+RETURN           t12          _            _             ; return value
+JUMP             L_end3       _            _             ; skip else
+L_else2::
+L_end3::
+LOAD_NAME        s            _            t13           ; load s
+LOAD_CONST       'False'      _            t14           ; load string
+CMP_EQ           t13          t14          t15         
+LOAD_NAME        s            _            t16           ; load s
+LOAD_CONST       'false'      _            t17           ; load string
+CMP_EQ           t16          t17          t18         
+OR               t15          t18          t19         
+BRANCH_IF_FALSE  t19          _            L_else4       ; if not test, go to else
+LOAD_CONST       False        _            t20           ; load False
+RETURN           t20          _            _             ; return value
+JUMP             L_end5       _            _             ; skip else
+L_else4::
+L_end5::
+LOAD_NAME        s            _            t21           ; load s
+LOAD_CONST       'None'       _            t22           ; load string
+CMP_EQ           t21          t22          t23         
+LOAD_NAME        s            _            t24           ; load s
+LOAD_CONST       'null'       _            t25           ; load string
+CMP_EQ           t24          t25          t26         
+OR               t23          t26          t27         
+BRANCH_IF_FALSE  t27          _            L_else6       ; if not test, go to else
+LOAD_CONST       None         _            t28           ; load None
+RETURN           t28          _            _             ; return value
+JUMP             L_end7       _            _             ; skip else
+L_else6::
+L_end7::
+LOAD_NAME        s            _            t29           ; load s
+LOAD_ATTR        t29          startswith   t30           ; getattr startswith
+LOAD_CONST       "'"          _            t31           ; load string
+ARG_PUSH         t31          0            _           
+CALL             t30          1            t32         
+LOAD_NAME        s            _            t33           ; load s
+LOAD_ATTR        t33          endswith     t34           ; getattr endswith
+LOAD_CONST       "'"          _            t35           ; load string
+ARG_PUSH         t35          0            _           
+CALL             t34          1            t36         
+AND              t32          t36          t37         
+STORE            t37          _            is_sq         ; assign is_sq
+LOAD_NAME        s            _            t38           ; load s
+LOAD_ATTR        t38          startswith   t39           ; getattr startswith
+LOAD_CONST       '"'          _            t40           ; load string
+ARG_PUSH         t40          0            _           
+CALL             t39          1            t41         
+LOAD_NAME        s            _            t42           ; load s
+LOAD_ATTR        t42          endswith     t43           ; getattr endswith
+LOAD_CONST       '"'          _            t44           ; load string
+ARG_PUSH         t44          0            _           
+CALL             t43          1            t45         
+AND              t41          t45          t46         
+STORE            t46          _            is_dq         ; assign is_dq
+LOAD_NAME        is_sq        _            t47           ; load is_sq
+LOAD_NAME        is_dq        _            t48           ; load is_dq
+OR               t47          t48          t49         
+BRANCH_IF_FALSE  t49          _            L_else8       ; if not test, go to else
+LOAD_NAME        s            _            t50           ; load s
+LOAD_CONST       1            _            t51           ; load 1
+LOAD_CONST       1            _            t52           ; load 1
+NEG              t52          _            t53         
+SUBSCRIPT        t50          t51:t53:_    t54         
+STORE            t54          _            val           ; assign val
+TRY_BEGIN        L_except11   _            _           
+LOAD_NAME        val          _            t55           ; load val
+LOAD_ATTR        t55          encode       t56           ; getattr encode
+LOAD_CONST       'utf-8'      _            t57           ; load string
+ARG_PUSH         t57          0            _           
+CALL             t56          1            t58         
+LOAD_ATTR        t58          decode       t59           ; getattr decode
+LOAD_CONST       'unicode_escape' _            t60           ; load string
+ARG_PUSH         t60          0            _           
+CALL             t59          1            t61         
+LOAD_ATTR        t61          encode       t62           ; getattr encode
+LOAD_CONST       'latin-1'    _            t63           ; load string
+ARG_PUSH         t63          0            _           
+CALL             t62          1            t64         
+LOAD_ATTR        t64          decode       t65           ; getattr decode
+LOAD_CONST       'utf-8'      _            t66           ; load string
+ARG_PUSH         t66          0            _           
+CALL             t65          1            t67         
+RETURN           t67          _            _             ; return value
+TRY_END          _            _            _           
+JUMP             L_end13      _            _             ; skip except
+L_except11::
+LOAD_NAME        Exception    _            t68           ; load Exception
+MATCH_EXC        t68          _            _             ; check exception type
+EXCEPT_VAR       _            _            e           
+LOAD_NAME        val          _            t69           ; load val
+LOAD_ATTR        t69          replace      t70           ; getattr replace
+LOAD_CONST       '\\n'        _            t71           ; load string
+LOAD_CONST       '\n'         _            t72           ; load string
+ARG_PUSH         t71          0            _           
+ARG_PUSH         t72          1            _           
+CALL             t70          2            t73         
+LOAD_ATTR        t73          replace      t74           ; getattr replace
+LOAD_CONST       '\\t'        _            t75           ; load string
+LOAD_CONST       '\t'         _            t76           ; load string
+ARG_PUSH         t75          0            _           
+ARG_PUSH         t76          1            _           
+CALL             t74          2            t77         
+LOAD_ATTR        t77          replace      t78           ; getattr replace
+LOAD_CONST       '\\r'        _            t79           ; load string
+LOAD_CONST       '\r'         _            t80           ; load string
+ARG_PUSH         t79          0            _           
+ARG_PUSH         t80          1            _           
+CALL             t78          2            t81         
+RETURN           t81          _            _             ; return value
+L_end13::
+JUMP             L_end9       _            _             ; skip else
+L_else8::
+L_end9::
+TRY_BEGIN        L_except15   _            _           
+LOAD_NAME        int          _            t82           ; load int
+LOAD_NAME        s            _            t83           ; load s
+ARG_PUSH         t83          0            _           
+CALL             t82          1            t84         
+RETURN           t84          _            _             ; return value
+TRY_END          _            _            _           
+JUMP             L_end17      _            _             ; skip except
+L_except15::
+LOAD_NAME        ValueError   _            t85           ; load ValueError
+MATCH_EXC        t85          _            _             ; check exception type
+PASS             _            _            _           
+L_end17::
+TRY_BEGIN        L_except19   _            _           
+LOAD_NAME        float        _            t86           ; load float
+LOAD_NAME        s            _            t87           ; load s
+ARG_PUSH         t87          0            _           
+CALL             t86          1            t88         
+RETURN           t88          _            _             ; return value
+TRY_END          _            _            _           
+JUMP             L_end21      _            _             ; skip except
+L_except19::
+LOAD_NAME        ValueError   _            t89           ; load ValueError
+MATCH_EXC        t89          _            _             ; check exception type
+PASS             _            _            _           
+L_end21::
+LOAD_NAME        s            _            t90           ; load s
+RETURN           t90          _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            parse_value 
+FUNCTION         _            _            tokenize_line  ; function tokenize_line
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            line        
+LOAD_CONST       False        _            t91           ; load False
+STORE            t91          _            in_q          ; assign in_q
+LOAD_CONST       ''           _            t92           ; load string
+STORE            t92          _            q_char        ; assign q_char
+BUILD_LIST       0            _            t93         
+STORE            t93          _            clean         ; assign clean
+LOAD_CONST       0            _            t94           ; load 0
+STORE            t94          _            i             ; assign i
+LOAD_NAME        len          _            t95           ; load len
+LOAD_NAME        line         _            t96           ; load line
+ARG_PUSH         t96          0            _           
+CALL             t95          1            t97         
+STORE            t97          _            n             ; assign n
+L_while_start22::
+LOAD_NAME        i            _            t98           ; load i
+LOAD_NAME        n            _            t99           ; load n
+CMP_LT           t98          t99          t100        
+BRANCH_IF_FALSE  t100         _            L_while_end23  ; while test false
+LOAD_NAME        line         _            t101          ; load line
+LOAD_NAME        i            _            t102          ; load i
+SUBSCRIPT        t101         t102         t103        
+STORE            t103         _            c             ; assign c
+LOAD_NAME        in_q         _            t104          ; load in_q
+BRANCH_IF_FALSE  t104         _            L_else24      ; if not test, go to else
+LOAD_NAME        c            _            t105          ; load c
+LOAD_NAME        q_char       _            t106          ; load q_char
+CMP_EQ           t105         t106         t107        
+BRANCH_IF_FALSE  t107         _            L_else26      ; if not test, go to else
+LOAD_CONST       False        _            t108          ; load False
+STORE            t108         _            in_q          ; assign in_q
+JUMP             L_end27      _            _             ; skip else
+L_else26::
+L_end27::
+LOAD_NAME        clean        _            t109          ; load clean
+LOAD_ATTR        t109         append       t110          ; getattr append
+LOAD_NAME        c            _            t111          ; load c
+ARG_PUSH         t111         0            _           
+CALL             t110         1            t112        
+JUMP             L_end25      _            _             ; skip else
+L_else24::
+LOAD_NAME        c            _            t113          ; load c
+LOAD_CONST       '"'          _            t114          ; load string
+CMP_EQ           t113         t114         t115        
+LOAD_NAME        c            _            t116          ; load c
+LOAD_CONST       "'"          _            t117          ; load string
+CMP_EQ           t116         t117         t118        
+OR               t115         t118         t119        
+BRANCH_IF_FALSE  t119         _            L_else28      ; if not test, go to else
+LOAD_CONST       True         _            t120          ; load True
+STORE            t120         _            in_q          ; assign in_q
+LOAD_NAME        c            _            t121          ; load c
+STORE            t121         _            q_char        ; assign q_char
+LOAD_NAME        clean        _            t122          ; load clean
+LOAD_ATTR        t122         append       t123          ; getattr append
+LOAD_NAME        c            _            t124          ; load c
+ARG_PUSH         t124         0            _           
+CALL             t123         1            t125        
+JUMP             L_end29      _            _             ; skip else
+L_else28::
+LOAD_NAME        c            _            t126          ; load c
+LOAD_CONST       ';'          _            t127          ; load string
+CMP_EQ           t126         t127         t128        
+BRANCH_IF_FALSE  t128         _            L_else30      ; if not test, go to else
+BREAK            _            _            _           
+JUMP             L_end31      _            _             ; skip else
+L_else30::
+LOAD_NAME        clean        _            t129          ; load clean
+LOAD_ATTR        t129         append       t130          ; getattr append
+LOAD_NAME        c            _            t131          ; load c
+ARG_PUSH         t131         0            _           
+CALL             t130         1            t132        
+L_end31::
+L_end29::
+L_end25::
+LOAD_NAME        i            _            t133          ; load i
+LOAD_CONST       1            _            t134          ; load 1
+ADD              t133         t134         t135        
+STORE            t135         _            i             ; assign i
+JUMP             L_while_start22 _            _             ; loop back
+L_while_end23::
+LOAD_CONST       ''           _            t136          ; load string
+LOAD_ATTR        t136         join         t137          ; getattr join
+LOAD_NAME        clean        _            t138          ; load clean
+ARG_PUSH         t138         0            _           
+CALL             t137         1            t139        
+LOAD_ATTR        t139         strip        t140          ; getattr strip
+CALL             t140         0            t141        
+STORE            t141         _            clean_str     ; assign clean_str
+LOAD_NAME        clean_str    _            t142          ; load clean_str
+NOT              t142         _            t143        
+BRANCH_IF_FALSE  t143         _            L_else32      ; if not test, go to else
+BUILD_LIST       0            _            t144        
+RETURN           t144         _            _             ; return value
+JUMP             L_end33      _            _             ; skip else
+L_else32::
+L_end33::
+BUILD_LIST       0            _            t145        
+STORE            t145         _            tokens        ; assign tokens
+LOAD_CONST       '\'[^\']*\'|\\"[^\\"]*\\"|\\S+' _            t146          ; load string
+STORE            t146         _            pat           ; assign pat
+LOAD_NAME        re           _            t147          ; load re
+LOAD_ATTR        t147         finditer     t148          ; getattr finditer
+LOAD_NAME        pat          _            t149          ; load pat
+LOAD_NAME        clean_str    _            t150          ; load clean_str
+ARG_PUSH         t149         0            _           
+ARG_PUSH         t150         1            _           
+CALL             t148         2            t151        
+GET_ITER         t151         _            t152        
+L_for_start34::
+ITER_NEXT        t152         _            t153        
+BRANCH_IF_EXHAUST t152         _            L_for_end35 
+STORE            t153         _            m             ; assign m
+LOAD_NAME        tokens       _            t154          ; load tokens
+LOAD_ATTR        t154         append       t155          ; getattr append
+LOAD_NAME        m            _            t156          ; load m
+LOAD_ATTR        t156         group        t157          ; getattr group
+CALL             t157         0            t158        
+ARG_PUSH         t158         0            _           
+CALL             t155         1            t159        
+JUMP             L_for_start34 _            _             ; loop back
+L_for_end35::
+LOAD_NAME        tokens       _            t160          ; load tokens
+RETURN           t160         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            tokenize_line
+FUNCTION         _            _            parse_line    ; function parse_line
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            line        
+LOAD_NAME        line         _            t161          ; load line
+LOAD_ATTR        t161         strip        t162          ; getattr strip
+CALL             t162         0            t163        
+STORE            t163         _            line          ; assign line
+LOAD_NAME        line         _            t164          ; load line
+NOT              t164         _            t165        
+LOAD_NAME        line         _            t166          ; load line
+LOAD_ATTR        t166         startswith   t167          ; getattr startswith
+LOAD_CONST       ';'          _            t168          ; load string
+ARG_PUSH         t168         0            _           
+CALL             t167         1            t169        
+OR               t165         t169         t170        
+BRANCH_IF_FALSE  t170         _            L_else36      ; if not test, go to else
+LOAD_CONST       None         _            t171          ; load None
+RETURN           t171         _            _             ; return value
+JUMP             L_end37      _            _             ; skip else
+L_else36::
+L_end37::
+LOAD_NAME        re           _            t172          ; load re
+LOAD_ATTR        t172         match        t173          ; getattr match
+LOAD_CONST       '^[A-Za-z_]\\w*::$' _            t174          ; load string
+LOAD_NAME        line         _            t175          ; load line
+ARG_PUSH         t174         0            _           
+ARG_PUSH         t175         1            _           
+CALL             t173         2            t176        
+BRANCH_IF_FALSE  t176         _            L_else38      ; if not test, go to else
+LOAD_NAME        line         _            t177          ; load line
+LOAD_CONST       2            _            t178          ; load 2
+NEG              t178         _            t179        
+SUBSCRIPT        t177         _:t179:_     t180        
+STORE            t180         _            label         ; assign label
+LOAD_CONST       'LABEL'      _            t181          ; load string
+LOAD_NAME        label        _            t182          ; load label
+LOAD_CONST       None         _            t183          ; load None
+LOAD_CONST       None         _            t184          ; load None
+TUPLE_APPEND     t181         0            _           
+TUPLE_APPEND     t182         1            _           
+TUPLE_APPEND     t183         2            _           
+TUPLE_APPEND     t184         3            _           
+BUILD_TUPLE      4            _            t185        
+RETURN           t185         _            _             ; return value
+JUMP             L_end39      _            _             ; skip else
+L_else38::
+L_end39::
+LOAD_NAME        tokenize_line _            t186          ; load tokenize_line
+LOAD_NAME        line         _            t187          ; load line
+ARG_PUSH         t187         0            _           
+CALL             t186         1            t188        
+STORE            t188         _            tokens        ; assign tokens
+LOAD_NAME        tokens       _            t189          ; load tokens
+NOT              t189         _            t190        
+BRANCH_IF_FALSE  t190         _            L_else40      ; if not test, go to else
+LOAD_CONST       None         _            t191          ; load None
+RETURN           t191         _            _             ; return value
+JUMP             L_end41      _            _             ; skip else
+L_else40::
+L_end41::
+L_while_start42::
+LOAD_NAME        len          _            t192          ; load len
+LOAD_NAME        tokens       _            t193          ; load tokens
+ARG_PUSH         t193         0            _           
+CALL             t192         1            t194        
+LOAD_CONST       4            _            t195          ; load 4
+CMP_LT           t194         t195         t196        
+BRANCH_IF_FALSE  t196         _            L_while_end43  ; while test false
+LOAD_NAME        tokens       _            t197          ; load tokens
+LOAD_ATTR        t197         append       t198          ; getattr append
+LOAD_CONST       '_'          _            t199          ; load string
+ARG_PUSH         t199         0            _           
+CALL             t198         1            t200        
+JUMP             L_while_start42 _            _             ; loop back
+L_while_end43::
+LOAD_NAME        tokens       _            t201          ; load tokens
+LOAD_CONST       0            _            t202          ; load 0
+SUBSCRIPT        t201         t202         t203        
+LOAD_ATTR        t203         upper        t204          ; getattr upper
+CALL             t204         0            t205        
+STORE            t205         _            op            ; assign op
+LOAD_NAME        tokens       _            t206          ; load tokens
+LOAD_CONST       1            _            t207          ; load 1
+SUBSCRIPT        t206         t207         t208        
+STORE            t208         _            arg1          ; assign arg1
+LOAD_NAME        tokens       _            t209          ; load tokens
+LOAD_CONST       2            _            t210          ; load 2
+SUBSCRIPT        t209         t210         t211        
+STORE            t211         _            arg2          ; assign arg2
+LOAD_NAME        tokens       _            t212          ; load tokens
+LOAD_CONST       3            _            t213          ; load 3
+SUBSCRIPT        t212         t213         t214        
+STORE            t214         _            result        ; assign result
+LOAD_NAME        op           _            t215          ; load op
+LOAD_NAME        arg1         _            t216          ; load arg1
+LOAD_NAME        arg2         _            t217          ; load arg2
+LOAD_NAME        result       _            t218          ; load result
+TUPLE_APPEND     t215         0            _           
+TUPLE_APPEND     t216         1            _           
+TUPLE_APPEND     t217         2            _           
+TUPLE_APPEND     t218         3            _           
+BUILD_TUPLE      4            _            t219        
+RETURN           t219         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            parse_line  
+CLASS            Instruction  _            _             ; class Instruction
+FUNCTION         _            _            __init__      ; function __init__
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+PARAM            _            _            op          
+PARAM            _            _            arg1        
+PARAM            _            _            arg2        
+PARAM            _            _            result      
+PARAM            _            _            lineno      
+LOAD_NAME        op           _            t220          ; load op
+LOAD_NAME        self         _            t221          ; load self
+STORE_ATTR       t221         op           t220        
+LOAD_NAME        arg1         _            t222          ; load arg1
+LOAD_NAME        self         _            t223          ; load self
+STORE_ATTR       t223         arg1         t222        
+LOAD_NAME        arg2         _            t224          ; load arg2
+LOAD_NAME        self         _            t225          ; load self
+STORE_ATTR       t225         arg2         t224        
+LOAD_NAME        result       _            t226          ; load result
+LOAD_NAME        self         _            t227          ; load self
+STORE_ATTR       t227         result       t226        
+LOAD_NAME        lineno       _            t228          ; load lineno
+LOAD_NAME        self         _            t229          ; load self
+STORE_ATTR       t229         lineno       t228        
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            __init__    
+FUNCTION         _            _            __repr__      ; function __repr__
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+LOAD_CONST       '<'          _            t230          ; load string
+LOAD_NAME        str          _            t231          ; load str
+LOAD_NAME        self         _            t232          ; load self
+LOAD_ATTR        t232         op           t233          ; getattr op
+ARG_PUSH         t233         0            _           
+CALL             t231         1            t234        
+ADD              t230         t234         t235        
+LOAD_CONST       ' '          _            t236          ; load string
+ADD              t235         t236         t237        
+LOAD_NAME        str          _            t238          ; load str
+LOAD_NAME        self         _            t239          ; load self
+LOAD_ATTR        t239         arg1         t240          ; getattr arg1
+ARG_PUSH         t240         0            _           
+CALL             t238         1            t241        
+ADD              t237         t241         t242        
+LOAD_CONST       ' '          _            t243          ; load string
+ADD              t242         t243         t244        
+LOAD_NAME        str          _            t245          ; load str
+LOAD_NAME        self         _            t246          ; load self
+LOAD_ATTR        t246         arg2         t247          ; getattr arg2
+ARG_PUSH         t247         0            _           
+CALL             t245         1            t248        
+ADD              t244         t248         t249        
+LOAD_CONST       ' '          _            t250          ; load string
+ADD              t249         t250         t251        
+LOAD_NAME        str          _            t252          ; load str
+LOAD_NAME        self         _            t253          ; load self
+LOAD_ATTR        t253         result       t254          ; getattr result
+ARG_PUSH         t254         0            _           
+CALL             t252         1            t255        
+ADD              t251         t255         t256        
+LOAD_CONST       '>'          _            t257          ; load string
+ADD              t256         t257         t258        
+RETURN           t258         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            __repr__    
+CLASS_END        _            _            Instruction 
+FUNCTION         _            _            load_program  ; function load_program
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            path        
+BUILD_LIST       0            _            t259        
+STORE            t259         _            instructions  ; assign instructions
+LOAD_NAME        open         _            t260          ; load open
+LOAD_NAME        path         _            t261          ; load path
+LOAD_CONST       'r'          _            t262          ; load string
+ARG_PUSH         t261         0            _           
+ARG_PUSH         t262         1            _           
+CALL             t260         2            t263        
+STORE            t263         _            f             ; assign f
+LOAD_CONST       1            _            t264          ; load 1
+STORE            t264         _            lineno        ; assign lineno
+LOAD_NAME        f            _            t265          ; load f
+GET_ITER         t265         _            t266        
+L_for_start44::
+ITER_NEXT        t266         _            t267        
+BRANCH_IF_EXHAUST t266         _            L_for_end45 
+STORE            t267         _            raw           ; assign raw
+LOAD_NAME        parse_line   _            t268          ; load parse_line
+LOAD_NAME        raw          _            t269          ; load raw
+ARG_PUSH         t269         0            _           
+CALL             t268         1            t270        
+STORE            t270         _            parsed        ; assign parsed
+LOAD_NAME        parsed       _            t271          ; load parsed
+LOAD_CONST       None         _            t272          ; load None
+CMP_IS_NOT       t271         t272         t273        
+BRANCH_IF_FALSE  t273         _            L_else46      ; if not test, go to else
+LOAD_NAME        parsed       _            t274          ; load parsed
+LOAD_CONST       0            _            t275          ; load 0
+SUBSCRIPT        t274         t275         t276        
+STORE            t276         _            op            ; assign op
+LOAD_NAME        parsed       _            t277          ; load parsed
+LOAD_CONST       1            _            t278          ; load 1
+SUBSCRIPT        t277         t278         t279        
+STORE            t279         _            arg1          ; assign arg1
+LOAD_NAME        parsed       _            t280          ; load parsed
+LOAD_CONST       2            _            t281          ; load 2
+SUBSCRIPT        t280         t281         t282        
+STORE            t282         _            arg2          ; assign arg2
+LOAD_NAME        parsed       _            t283          ; load parsed
+LOAD_CONST       3            _            t284          ; load 3
+SUBSCRIPT        t283         t284         t285        
+STORE            t285         _            result        ; assign result
+LOAD_NAME        instructions _            t286          ; load instructions
+LOAD_ATTR        t286         append       t287          ; getattr append
+LOAD_NAME        Instruction  _            t288          ; load Instruction
+LOAD_NAME        op           _            t289          ; load op
+LOAD_NAME        arg1         _            t290          ; load arg1
+LOAD_NAME        arg2         _            t291          ; load arg2
+LOAD_NAME        result       _            t292          ; load result
+LOAD_NAME        lineno       _            t293          ; load lineno
+ARG_PUSH         t289         0            _           
+ARG_PUSH         t290         1            _           
+ARG_PUSH         t291         2            _           
+ARG_PUSH         t292         3            _           
+ARG_PUSH         t293         4            _           
+CALL             t288         5            t294        
+ARG_PUSH         t294         0            _           
+CALL             t287         1            t295        
+JUMP             L_end47      _            _             ; skip else
+L_else46::
+L_end47::
+LOAD_NAME        lineno       _            t296          ; load lineno
+LOAD_CONST       1            _            t297          ; load 1
+ADD              t296         t297         t298        
+STORE            t298         _            lineno        ; assign lineno
+JUMP             L_for_start44 _            _             ; loop back
+L_for_end45::
+LOAD_NAME        f            _            t299          ; load f
+LOAD_ATTR        t299         close        t300          ; getattr close
+CALL             t300         0            t301        
+BUILD_DICT       0            _            t302        
+STORE            t302         _            label_map     ; assign label_map
+LOAD_CONST       0            _            t303          ; load 0
+STORE            t303         _            idx           ; assign idx
+LOAD_NAME        instructions _            t304          ; load instructions
+GET_ITER         t304         _            t305        
+L_for_start48::
+ITER_NEXT        t305         _            t306        
+BRANCH_IF_EXHAUST t305         _            L_for_end49 
+STORE            t306         _            inst          ; assign inst
+LOAD_NAME        inst         _            t307          ; load inst
+LOAD_ATTR        t307         op           t308          ; getattr op
+LOAD_CONST       'LABEL'      _            t309          ; load string
+CMP_EQ           t308         t309         t310        
+BRANCH_IF_FALSE  t310         _            L_else50      ; if not test, go to else
+LOAD_NAME        idx          _            t311          ; load idx
+LOAD_NAME        label_map    _            t312          ; load label_map
+LOAD_NAME        inst         _            t313          ; load inst
+LOAD_ATTR        t313         arg1         t314          ; getattr arg1
+SUBSCRIPT_SET    t312         t314         t311        
+JUMP             L_end51      _            _             ; skip else
+L_else50::
+L_end51::
+LOAD_NAME        idx          _            t315          ; load idx
+LOAD_CONST       1            _            t316          ; load 1
+ADD              t315         t316         t317        
+STORE            t317         _            idx           ; assign idx
+JUMP             L_for_start48 _            _             ; loop back
+L_for_end49::
+BUILD_DICT       0            _            t318        
+STORE            t318         _            function_map  ; assign function_map
+BUILD_LIST       0            _            t319        
+STORE            t319         _            func_stack    ; assign func_stack
+LOAD_CONST       0            _            t320          ; load 0
+STORE            t320         _            idx           ; assign idx
+LOAD_NAME        instructions _            t321          ; load instructions
+GET_ITER         t321         _            t322        
+L_for_start52::
+ITER_NEXT        t322         _            t323        
+BRANCH_IF_EXHAUST t322         _            L_for_end53 
+STORE            t323         _            inst          ; assign inst
+LOAD_NAME        inst         _            t324          ; load inst
+LOAD_ATTR        t324         op           t325          ; getattr op
+LOAD_CONST       'FUNCTION'   _            t326          ; load string
+CMP_EQ           t325         t326         t327        
+BRANCH_IF_FALSE  t327         _            L_else54      ; if not test, go to else
+LOAD_NAME        func_stack   _            t328          ; load func_stack
+LOAD_ATTR        t328         append       t329          ; getattr append
+LOAD_NAME        inst         _            t330          ; load inst
+LOAD_ATTR        t330         result       t331          ; getattr result
+LOAD_NAME        idx          _            t332          ; load idx
+TUPLE_APPEND     t331         0            _           
+TUPLE_APPEND     t332         1            _           
+BUILD_TUPLE      2            _            t333        
+ARG_PUSH         t333         0            _           
+CALL             t329         1            t334        
+JUMP             L_end55      _            _             ; skip else
+L_else54::
+LOAD_NAME        inst         _            t335          ; load inst
+LOAD_ATTR        t335         op           t336          ; getattr op
+LOAD_CONST       'FUNCTION_END' _            t337          ; load string
+CMP_EQ           t336         t337         t338        
+BRANCH_IF_FALSE  t338         _            L_else56      ; if not test, go to else
+LOAD_NAME        len          _            t339          ; load len
+LOAD_NAME        func_stack   _            t340          ; load func_stack
+ARG_PUSH         t340         0            _           
+CALL             t339         1            t341        
+LOAD_CONST       0            _            t342          ; load 0
+CMP_GT           t341         t342         t343        
+BRANCH_IF_FALSE  t343         _            L_else58      ; if not test, go to else
+LOAD_NAME        func_stack   _            t344          ; load func_stack
+LOAD_ATTR        t344         pop          t345          ; getattr pop
+CALL             t345         0            t346        
+STORE            t346         _            popped        ; assign popped
+LOAD_NAME        popped       _            t347          ; load popped
+LOAD_CONST       0            _            t348          ; load 0
+SUBSCRIPT        t347         t348         t349        
+STORE            t349         _            fname         ; assign fname
+LOAD_NAME        popped       _            t350          ; load popped
+LOAD_CONST       1            _            t351          ; load 1
+SUBSCRIPT        t350         t351         t352        
+STORE            t352         _            start         ; assign start
+LOAD_NAME        start        _            t353          ; load start
+LOAD_NAME        idx          _            t354          ; load idx
+TUPLE_APPEND     t353         0            _           
+TUPLE_APPEND     t354         1            _           
+BUILD_TUPLE      2            _            t355        
+LOAD_NAME        function_map _            t356          ; load function_map
+LOAD_NAME        fname        _            t357          ; load fname
+SUBSCRIPT_SET    t356         t357         t355        
+JUMP             L_end59      _            _             ; skip else
+L_else58::
+L_end59::
+JUMP             L_end57      _            _             ; skip else
+L_else56::
+L_end57::
+L_end55::
+LOAD_NAME        idx          _            t358          ; load idx
+LOAD_CONST       1            _            t359          ; load 1
+ADD              t358         t359         t360        
+STORE            t360         _            idx           ; assign idx
+JUMP             L_for_start52 _            _             ; loop back
+L_for_end53::
+LOAD_NAME        instructions _            t361          ; load instructions
+LOAD_NAME        label_map    _            t362          ; load label_map
+LOAD_NAME        function_map _            t363          ; load function_map
+TUPLE_APPEND     t361         0            _           
+TUPLE_APPEND     t362         1            _           
+TUPLE_APPEND     t363         2            _           
+BUILD_TUPLE      3            _            t364        
+RETURN           t364         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            load_program
+CLASS            Frame        _            _             ; class Frame
+FUNCTION         _            _            __init__      ; function __init__
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+PARAM            _            _            name        
+PARAM            _            _            instructions
+PARAM            _            _            label_map   
+PARAM            _            _            globals_env 
+LOAD_NAME        name         _            t365          ; load name
+LOAD_NAME        self         _            t366          ; load self
+STORE_ATTR       t366         name         t365        
+LOAD_NAME        instructions _            t367          ; load instructions
+LOAD_NAME        self         _            t368          ; load self
+STORE_ATTR       t368         instructions t367        
+LOAD_NAME        label_map    _            t369          ; load label_map
+LOAD_NAME        self         _            t370          ; load self
+STORE_ATTR       t370         label_map    t369        
+LOAD_NAME        globals_env  _            t371          ; load globals_env
+LOAD_NAME        self         _            t372          ; load self
+STORE_ATTR       t372         globals_env  t371        
+BUILD_DICT       0            _            t373        
+LOAD_NAME        self         _            t374          ; load self
+STORE_ATTR       t374         locals       t373        
+LOAD_CONST       0            _            t375          ; load 0
+LOAD_NAME        self         _            t376          ; load self
+STORE_ATTR       t376         pc           t375        
+LOAD_CONST       None         _            t377          ; load None
+LOAD_NAME        self         _            t378          ; load self
+STORE_ATTR       t378         return_value t377        
+BUILD_LIST       0            _            t379        
+LOAD_NAME        self         _            t380          ; load self
+STORE_ATTR       t380         arg_buffer   t379        
+BUILD_LIST       0            _            t381        
+LOAD_NAME        self         _            t382          ; load self
+STORE_ATTR       t382         list_buffer  t381        
+BUILD_LIST       0            _            t383        
+LOAD_NAME        self         _            t384          ; load self
+STORE_ATTR       t384         dict_buffer  t383        
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            __init__    
+FUNCTION         _            _            resolve       ; function resolve
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+PARAM            _            _            token       
+LOAD_NAME        token        _            t385          ; load token
+LOAD_CONST       None         _            t386          ; load None
+CMP_IS           t385         t386         t387        
+LOAD_NAME        token        _            t388          ; load token
+LOAD_CONST       '_'          _            t389          ; load string
+CMP_EQ           t388         t389         t390        
+OR               t387         t390         t391        
+BRANCH_IF_FALSE  t391         _            L_else60      ; if not test, go to else
+LOAD_CONST       None         _            t392          ; load None
+RETURN           t392         _            _             ; return value
+JUMP             L_end61      _            _             ; skip else
+L_else60::
+L_end61::
+LOAD_NAME        token        _            t393          ; load token
+LOAD_NAME        self         _            t394          ; load self
+LOAD_ATTR        t394         locals       t395          ; getattr locals
+CMP_IN           t393         t395         t396        
+BRANCH_IF_FALSE  t396         _            L_else62      ; if not test, go to else
+LOAD_NAME        self         _            t397          ; load self
+LOAD_ATTR        t397         locals       t398          ; getattr locals
+LOAD_NAME        token        _            t399          ; load token
+SUBSCRIPT        t398         t399         t400        
+RETURN           t400         _            _             ; return value
+JUMP             L_end63      _            _             ; skip else
+L_else62::
+L_end63::
+LOAD_NAME        token        _            t401          ; load token
+LOAD_NAME        self         _            t402          ; load self
+LOAD_ATTR        t402         globals_env  t403          ; getattr globals_env
+CMP_IN           t401         t403         t404        
+BRANCH_IF_FALSE  t404         _            L_else64      ; if not test, go to else
+LOAD_NAME        self         _            t405          ; load self
+LOAD_ATTR        t405         globals_env  t406          ; getattr globals_env
+LOAD_NAME        token        _            t407          ; load token
+SUBSCRIPT        t406         t407         t408        
+RETURN           t408         _            _             ; return value
+JUMP             L_end65      _            _             ; skip else
+L_else64::
+L_end65::
+LOAD_NAME        parse_value  _            t409          ; load parse_value
+LOAD_NAME        token        _            t410          ; load token
+ARG_PUSH         t410         0            _           
+CALL             t409         1            t411        
+STORE            t411         _            val           ; assign val
+LOAD_NAME        type         _            t412          ; load type
+LOAD_NAME        val          _            t413          ; load val
+ARG_PUSH         t413         0            _           
+CALL             t412         1            t414        
+LOAD_NAME        str          _            t415          ; load str
+CMP_IS           t414         t415         t416        
+LOAD_NAME        val          _            t417          ; load val
+LOAD_NAME        token        _            t418          ; load token
+CMP_EQ           t417         t418         t419        
+AND              t416         t419         t420        
+BRANCH_IF_FALSE  t420         _            L_else66      ; if not test, go to else
+LOAD_NAME        print        _            t421          ; load print
+LOAD_CONST       '未定義的名稱: '   _            t422          ; load string
+LOAD_NAME        str          _            t423          ; load str
+LOAD_NAME        token        _            t424          ; load token
+ARG_PUSH         t424         0            _           
+CALL             t423         1            t425        
+ADD              t422         t425         t426        
+ARG_PUSH         t426         0            _           
+CALL             t421         1            t427        
+LOAD_NAME        sys          _            t428          ; load sys
+LOAD_ATTR        t428         exit         t429          ; getattr exit
+LOAD_CONST       1            _            t430          ; load 1
+ARG_PUSH         t430         0            _           
+CALL             t429         1            t431        
+JUMP             L_end67      _            _             ; skip else
+L_else66::
+L_end67::
+LOAD_NAME        val          _            t432          ; load val
+RETURN           t432         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            resolve     
+FUNCTION         _            _            set_local     ; function set_local
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+PARAM            _            _            name        
+PARAM            _            _            value       
+LOAD_NAME        name         _            t433          ; load name
+LOAD_NAME        name         _            t434          ; load name
+LOAD_CONST       '_'          _            t435          ; load string
+CMP_NE           t434         t435         t436        
+AND              t433         t436         t437        
+BRANCH_IF_FALSE  t437         _            L_else68      ; if not test, go to else
+LOAD_NAME        value        _            t438          ; load value
+LOAD_NAME        self         _            t439          ; load self
+LOAD_ATTR        t439         locals       t440          ; getattr locals
+LOAD_NAME        name         _            t441          ; load name
+SUBSCRIPT_SET    t440         t441         t438        
+JUMP             L_end69      _            _             ; skip else
+L_else68::
+L_end69::
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            set_local   
+CLASS_END        _            _            Frame       
+CLASS            QD0VM        _            _             ; class QD0VM
+FUNCTION         _            _            __init__      ; function __init__
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+PARAM            _            _            instructions
+PARAM            _            _            label_map   
+PARAM            _            _            function_map
+LOAD_NAME        instructions _            t442          ; load instructions
+LOAD_NAME        self         _            t443          ; load self
+STORE_ATTR       t443         instructions t442        
+LOAD_NAME        label_map    _            t444          ; load label_map
+LOAD_NAME        self         _            t445          ; load self
+STORE_ATTR       t445         label_map    t444        
+LOAD_NAME        function_map _            t446          ; load function_map
+LOAD_NAME        self         _            t447          ; load self
+STORE_ATTR       t447         function_map t446        
+LOAD_CONST       'print'      _            t448          ; load string
+LOAD_NAME        print        _            t449          ; load print
+DICT_INSERT      t448         t449         _           
+LOAD_CONST       'len'        _            t450          ; load string
+LOAD_NAME        len          _            t451          ; load len
+DICT_INSERT      t450         t451         _           
+LOAD_CONST       'range'      _            t452          ; load string
+LOAD_NAME        range        _            t453          ; load range
+DICT_INSERT      t452         t453         _           
+LOAD_CONST       'int'        _            t454          ; load string
+LOAD_NAME        int          _            t455          ; load int
+DICT_INSERT      t454         t455         _           
+LOAD_CONST       'float'      _            t456          ; load string
+LOAD_NAME        float        _            t457          ; load float
+DICT_INSERT      t456         t457         _           
+LOAD_CONST       'str'        _            t458          ; load string
+LOAD_NAME        str          _            t459          ; load str
+DICT_INSERT      t458         t459         _           
+LOAD_CONST       'bool'       _            t460          ; load string
+LOAD_NAME        bool         _            t461          ; load bool
+DICT_INSERT      t460         t461         _           
+LOAD_CONST       'list'       _            t462          ; load string
+LOAD_NAME        list         _            t463          ; load list
+DICT_INSERT      t462         t463         _           
+LOAD_CONST       'dict'       _            t464          ; load string
+LOAD_NAME        dict         _            t465          ; load dict
+DICT_INSERT      t464         t465         _           
+LOAD_CONST       'sum'        _            t466          ; load string
+LOAD_NAME        sum          _            t467          ; load sum
+DICT_INSERT      t466         t467         _           
+LOAD_CONST       'format'     _            t468          ; load string
+LOAD_NAME        format       _            t469          ; load format
+DICT_INSERT      t468         t469         _           
+LOAD_CONST       'True'       _            t470          ; load string
+LOAD_CONST       True         _            t471          ; load True
+DICT_INSERT      t470         t471         _           
+LOAD_CONST       'False'      _            t472          ; load string
+LOAD_CONST       False        _            t473          ; load False
+DICT_INSERT      t472         t473         _           
+LOAD_CONST       'None'       _            t474          ; load string
+LOAD_CONST       None         _            t475          ; load None
+DICT_INSERT      t474         t475         _           
+BUILD_DICT       14           _            t476        
+LOAD_NAME        self         _            t477          ; load self
+STORE_ATTR       t477         globals      t476        
+LOAD_NAME        function_map _            t478          ; load function_map
+GET_ITER         t478         _            t479        
+L_for_start70::
+ITER_NEXT        t479         _            t480        
+BRANCH_IF_EXHAUST t479         _            L_for_end71 
+STORE            t480         _            fname         ; assign fname
+LOAD_NAME        function_map _            t481          ; load function_map
+LOAD_NAME        fname        _            t482          ; load fname
+SUBSCRIPT        t481         t482         t483        
+STORE            t483         _            start_end     ; assign start_end
+LOAD_NAME        self         _            t484          ; load self
+LOAD_ATTR        t484         _make_function t485          ; getattr _make_function
+LOAD_NAME        fname        _            t486          ; load fname
+LOAD_NAME        start_end    _            t487          ; load start_end
+LOAD_CONST       0            _            t488          ; load 0
+SUBSCRIPT        t487         t488         t489        
+LOAD_NAME        start_end    _            t490          ; load start_end
+LOAD_CONST       1            _            t491          ; load 1
+SUBSCRIPT        t490         t491         t492        
+ARG_PUSH         t486         0            _           
+ARG_PUSH         t489         1            _           
+ARG_PUSH         t492         2            _           
+CALL             t485         3            t493        
+LOAD_NAME        self         _            t494          ; load self
+LOAD_ATTR        t494         globals      t495          ; getattr globals
+LOAD_NAME        fname        _            t496          ; load fname
+SUBSCRIPT_SET    t495         t496         t493        
+JUMP             L_for_start70 _            _             ; loop back
+L_for_end71::
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            __init__    
+FUNCTION         _            _            _make_function  ; function _make_function
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+PARAM            _            _            fname       
+PARAM            _            _            start_idx   
+PARAM            _            _            end_idx     
+LOAD_NAME        self         _            t497          ; load self
+STORE            t497         _            vm            ; assign vm
+FUNCTION         _            _            qd_function   ; function qd_function
+ENTER_SCOPE      _            _            _           
+VARARG           _            _            args        
+LOAD_NAME        vm           _            t498          ; load vm
+LOAD_ATTR        t498         _call_qd_function t499          ; getattr _call_qd_function
+LOAD_NAME        fname        _            t500          ; load fname
+LOAD_NAME        start_idx    _            t501          ; load start_idx
+LOAD_NAME        end_idx      _            t502          ; load end_idx
+LOAD_NAME        list         _            t503          ; load list
+LOAD_NAME        args         _            t504          ; load args
+ARG_PUSH         t504         0            _           
+CALL             t503         1            t505        
+ARG_PUSH         t500         0            _           
+ARG_PUSH         t501         1            _           
+ARG_PUSH         t502         2            _           
+ARG_PUSH         t505         3            _           
+CALL             t499         4            t506        
+RETURN           t506         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            qd_function 
+LOAD_NAME        fname        _            t507          ; load fname
+LOAD_NAME        qd_function  _            t508          ; load qd_function
+STORE_ATTR       t508         __name__     t507        
+LOAD_NAME        qd_function  _            t509          ; load qd_function
+RETURN           t509         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            _make_function
+FUNCTION         _            _            _call_qd_function  ; function _call_qd_function
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+PARAM            _            _            fname       
+PARAM            _            _            start_idx   
+PARAM            _            _            end_idx     
+PARAM            _            _            args        
+LOAD_NAME        Frame        _            t510          ; load Frame
+LOAD_NAME        fname        _            t511          ; load fname
+LOAD_NAME        self         _            t512          ; load self
+LOAD_ATTR        t512         instructions t513          ; getattr instructions
+LOAD_NAME        self         _            t514          ; load self
+LOAD_ATTR        t514         label_map    t515          ; getattr label_map
+LOAD_NAME        self         _            t516          ; load self
+LOAD_ATTR        t516         globals      t517          ; getattr globals
+ARG_PUSH         t511         0            _           
+ARG_PUSH         t513         1            _           
+ARG_PUSH         t515         2            _           
+ARG_PUSH         t517         3            _           
+CALL             t510         4            t518        
+STORE            t518         _            frame         ; assign frame
+LOAD_NAME        start_idx    _            t519          ; load start_idx
+LOAD_CONST       1            _            t520          ; load 1
+ADD              t519         t520         t521        
+STORE            t521         _            pc            ; assign pc
+LOAD_CONST       0            _            t522          ; load 0
+STORE            t522         _            param_idx     ; assign param_idx
+L_while_start72::
+LOAD_NAME        pc           _            t523          ; load pc
+LOAD_NAME        end_idx      _            t524          ; load end_idx
+CMP_LE           t523         t524         t525        
+BRANCH_IF_FALSE  t525         _            L_while_end73  ; while test false
+LOAD_NAME        self         _            t526          ; load self
+LOAD_ATTR        t526         instructions t527          ; getattr instructions
+LOAD_NAME        pc           _            t528          ; load pc
+SUBSCRIPT        t527         t528         t529        
+STORE            t529         _            inst          ; assign inst
+LOAD_NAME        inst         _            t530          ; load inst
+LOAD_ATTR        t530         op           t531          ; getattr op
+LOAD_CONST       'ENTER_SCOPE' _            t532          ; load string
+CMP_EQ           t531         t532         t533        
+BRANCH_IF_FALSE  t533         _            L_else74      ; if not test, go to else
+LOAD_NAME        pc           _            t534          ; load pc
+LOAD_CONST       1            _            t535          ; load 1
+ADD              t534         t535         t536        
+STORE            t536         _            pc            ; assign pc
+CONTINUE         _            _            _           
+JUMP             L_end75      _            _             ; skip else
+L_else74::
+L_end75::
+LOAD_NAME        inst         _            t537          ; load inst
+LOAD_ATTR        t537         op           t538          ; getattr op
+LOAD_CONST       'PARAM'      _            t539          ; load string
+CMP_EQ           t538         t539         t540        
+BRANCH_IF_FALSE  t540         _            L_else76      ; if not test, go to else
+LOAD_NAME        param_idx    _            t541          ; load param_idx
+LOAD_NAME        len          _            t542          ; load len
+LOAD_NAME        args         _            t543          ; load args
+ARG_PUSH         t543         0            _           
+CALL             t542         1            t544        
+CMP_LT           t541         t544         t545        
+BRANCH_IF_FALSE  t545         _            L_else78      ; if not test, go to else
+LOAD_NAME        args         _            t546          ; load args
+LOAD_NAME        param_idx    _            t547          ; load param_idx
+SUBSCRIPT        t546         t547         t548        
+LOAD_NAME        frame        _            t549          ; load frame
+LOAD_ATTR        t549         locals       t550          ; getattr locals
+LOAD_NAME        inst         _            t551          ; load inst
+LOAD_ATTR        t551         result       t552          ; getattr result
+SUBSCRIPT_SET    t550         t552         t548        
+JUMP             L_end79      _            _             ; skip else
+L_else78::
+L_end79::
+LOAD_NAME        param_idx    _            t553          ; load param_idx
+LOAD_CONST       1            _            t554          ; load 1
+ADD              t553         t554         t555        
+STORE            t555         _            param_idx     ; assign param_idx
+LOAD_NAME        pc           _            t556          ; load pc
+LOAD_CONST       1            _            t557          ; load 1
+ADD              t556         t557         t558        
+STORE            t558         _            pc            ; assign pc
+CONTINUE         _            _            _           
+JUMP             L_end77      _            _             ; skip else
+L_else76::
+L_end77::
+BREAK            _            _            _           
+JUMP             L_while_start72 _            _             ; loop back
+L_while_end73::
+LOAD_NAME        pc           _            t559          ; load pc
+LOAD_NAME        frame        _            t560          ; load frame
+STORE_ATTR       t560         pc           t559        
+LOAD_NAME        self         _            t561          ; load self
+LOAD_ATTR        t561         _run_frame   t562          ; getattr _run_frame
+LOAD_NAME        frame        _            t563          ; load frame
+LOAD_NAME        end_idx      _            t564          ; load end_idx
+ARG_PUSH         t563         0            _           
+ARG_PUSH         t564         1            _           
+CALL             t562         2            t565        
+RETURN           t565         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            _call_qd_function
+FUNCTION         _            _            run           ; function run
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+LOAD_NAME        Frame        _            t566          ; load Frame
+LOAD_CONST       '__main__'   _            t567          ; load string
+LOAD_NAME        self         _            t568          ; load self
+LOAD_ATTR        t568         instructions t569          ; getattr instructions
+LOAD_NAME        self         _            t570          ; load self
+LOAD_ATTR        t570         label_map    t571          ; getattr label_map
+LOAD_NAME        self         _            t572          ; load self
+LOAD_ATTR        t572         globals      t573          ; getattr globals
+ARG_PUSH         t567         0            _           
+ARG_PUSH         t569         1            _           
+ARG_PUSH         t571         2            _           
+ARG_PUSH         t573         3            _           
+CALL             t566         4            t574        
+STORE            t574         _            frame         ; assign frame
+LOAD_CONST       0            _            t575          ; load 0
+LOAD_NAME        frame        _            t576          ; load frame
+STORE_ATTR       t576         pc           t575        
+LOAD_NAME        self         _            t577          ; load self
+LOAD_ATTR        t577         _run_frame   t578          ; getattr _run_frame
+LOAD_NAME        frame        _            t579          ; load frame
+LOAD_NAME        len          _            t580          ; load len
+LOAD_NAME        self         _            t581          ; load self
+LOAD_ATTR        t581         instructions t582          ; getattr instructions
+ARG_PUSH         t582         0            _           
+CALL             t580         1            t583        
+LOAD_CONST       1            _            t584          ; load 1
+SUB              t583         t584         t585        
+LOAD_CONST       True         _            t586          ; load True
+ARG_PUSH         t579         0            _           
+ARG_PUSH         t585         1            _           
+ARG_PUSH         t586         2            _           
+CALL             t578         3            t587        
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            run         
+FUNCTION         _            _            _run_frame    ; function _run_frame
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+PARAM            _            _            frame       
+PARAM            _            _            end_idx     
+PARAM            _            _            top_level_only
+LOAD_NAME        set          _            t588          ; load set
+CALL             t588         0            t589        
+STORE            t589         _            func_ranges   ; assign func_ranges
+LOAD_NAME        self         _            t590          ; load self
+LOAD_ATTR        t590         function_map t591          ; getattr function_map
+GET_ITER         t591         _            t592        
+L_for_start80::
+ITER_NEXT        t592         _            t593        
+BRANCH_IF_EXHAUST t592         _            L_for_end81 
+STORE            t593         _            fname         ; assign fname
+LOAD_NAME        self         _            t594          ; load self
+LOAD_ATTR        t594         function_map t595          ; getattr function_map
+LOAD_NAME        fname        _            t596          ; load fname
+SUBSCRIPT        t595         t596         t597        
+STORE            t597         _            s_e           ; assign s_e
+LOAD_NAME        s_e          _            t598          ; load s_e
+LOAD_CONST       0            _            t599          ; load 0
+SUBSCRIPT        t598         t599         t600        
+STORE            t600         _            s             ; assign s
+LOAD_NAME        s_e          _            t601          ; load s_e
+LOAD_CONST       1            _            t602          ; load 1
+SUBSCRIPT        t601         t602         t603        
+STORE            t603         _            e             ; assign e
+LOAD_NAME        range        _            t604          ; load range
+LOAD_NAME        s            _            t605          ; load s
+LOAD_NAME        e            _            t606          ; load e
+LOAD_CONST       1            _            t607          ; load 1
+ADD              t606         t607         t608        
+ARG_PUSH         t605         0            _           
+ARG_PUSH         t608         1            _           
+CALL             t604         2            t609        
+GET_ITER         t609         _            t610        
+L_for_start82::
+ITER_NEXT        t610         _            t611        
+BRANCH_IF_EXHAUST t610         _            L_for_end83 
+STORE            t611         _            i             ; assign i
+LOAD_NAME        func_ranges  _            t612          ; load func_ranges
+LOAD_ATTR        t612         add          t613          ; getattr add
+LOAD_NAME        i            _            t614          ; load i
+ARG_PUSH         t614         0            _           
+CALL             t613         1            t615        
+JUMP             L_for_start82 _            _             ; loop back
+L_for_end83::
+JUMP             L_for_start80 _            _             ; loop back
+L_for_end81::
+L_while_start84::
+LOAD_NAME        frame        _            t616          ; load frame
+LOAD_ATTR        t616         pc           t617          ; getattr pc
+LOAD_NAME        end_idx      _            t618          ; load end_idx
+CMP_LE           t617         t618         t619        
+BRANCH_IF_FALSE  t619         _            L_while_end85  ; while test false
+LOAD_NAME        frame        _            t620          ; load frame
+LOAD_ATTR        t620         pc           t621          ; getattr pc
+STORE            t621         _            idx           ; assign idx
+LOAD_NAME        top_level_only _            t622          ; load top_level_only
+LOAD_NAME        idx          _            t623          ; load idx
+LOAD_NAME        func_ranges  _            t624          ; load func_ranges
+CMP_IN           t623         t624         t625        
+AND              t622         t625         t626        
+BRANCH_IF_FALSE  t626         _            L_else86      ; if not test, go to else
+LOAD_NAME        frame        _            t627          ; load frame
+LOAD_ATTR        t627         pc           t628          ; getattr pc
+LOAD_CONST       1            _            t629          ; load 1
+ADD              t628         t629         t630        
+LOAD_NAME        frame        _            t631          ; load frame
+STORE_ATTR       t631         pc           t630        
+CONTINUE         _            _            _           
+JUMP             L_end87      _            _             ; skip else
+L_else86::
+L_end87::
+LOAD_NAME        self         _            t632          ; load self
+LOAD_ATTR        t632         instructions t633          ; getattr instructions
+LOAD_NAME        idx          _            t634          ; load idx
+SUBSCRIPT        t633         t634         t635        
+STORE            t635         _            inst          ; assign inst
+LOAD_NAME        inst         _            t636          ; load inst
+LOAD_ATTR        t636         op           t637          ; getattr op
+STORE            t637         _            op            ; assign op
+LOAD_NAME        op           _            t638          ; load op
+LOAD_CONST       'FUNCTION'   _            t639          ; load string
+LOAD_CONST       'FUNCTION_END' _            t640          ; load string
+LOAD_CONST       'ENTER_SCOPE' _            t641          ; load string
+LOAD_CONST       'EXIT_SCOPE' _            t642          ; load string
+LOAD_CONST       'PARAM'      _            t643          ; load string
+LOAD_CONST       'LABEL'      _            t644          ; load string
+TUPLE_APPEND     t639         0            _           
+TUPLE_APPEND     t640         1            _           
+TUPLE_APPEND     t641         2            _           
+TUPLE_APPEND     t642         3            _           
+TUPLE_APPEND     t643         4            _           
+TUPLE_APPEND     t644         5            _           
+BUILD_TUPLE      6            _            t645        
+CMP_IN           t638         t645         t646        
+BRANCH_IF_FALSE  t646         _            L_else88      ; if not test, go to else
+LOAD_NAME        frame        _            t647          ; load frame
+LOAD_ATTR        t647         pc           t648          ; getattr pc
+LOAD_CONST       1            _            t649          ; load 1
+ADD              t648         t649         t650        
+LOAD_NAME        frame        _            t651          ; load frame
+STORE_ATTR       t651         pc           t650        
+CONTINUE         _            _            _           
+JUMP             L_end89      _            _             ; skip else
+L_else88::
+L_end89::
+TRY_BEGIN        L_except91   _            _           
+LOAD_NAME        self         _            t652          ; load self
+LOAD_ATTR        t652         _exec        t653          ; getattr _exec
+LOAD_NAME        inst         _            t654          ; load inst
+LOAD_NAME        frame        _            t655          ; load frame
+ARG_PUSH         t654         0            _           
+ARG_PUSH         t655         1            _           
+CALL             t653         2            t656        
+STORE            t656         _            ret           ; assign ret
+TRY_END          _            _            _           
+JUMP             L_end93      _            _             ; skip except
+L_except91::
+LOAD_NAME        Exception    _            t657          ; load Exception
+MATCH_EXC        t657         _            _             ; check exception type
+EXCEPT_VAR       _            _            e           
+LOAD_NAME        print        _            t658          ; load print
+LOAD_CONST       '[執行錯誤] 第 '  _            t659          ; load string
+LOAD_NAME        str          _            t660          ; load str
+LOAD_NAME        inst         _            t661          ; load inst
+LOAD_ATTR        t661         lineno       t662          ; getattr lineno
+ARG_PUSH         t662         0            _           
+CALL             t660         1            t663        
+ADD              t659         t663         t664        
+LOAD_CONST       ' 行 '        _            t665          ; load string
+ADD              t664         t665         t666        
+LOAD_NAME        str          _            t667          ; load str
+LOAD_NAME        inst         _            t668          ; load inst
+ARG_PUSH         t668         0            _           
+CALL             t667         1            t669        
+ADD              t666         t669         t670        
+LOAD_CONST       ': '         _            t671          ; load string
+ADD              t670         t671         t672        
+LOAD_NAME        str          _            t673          ; load str
+LOAD_NAME        e            _            t674          ; load e
+ARG_PUSH         t674         0            _           
+CALL             t673         1            t675        
+ADD              t672         t675         t676        
+ARG_PUSH         t676         0            _           
+CALL             t658         1            t677        
+LOAD_NAME        sys          _            t678          ; load sys
+LOAD_ATTR        t678         exit         t679          ; getattr exit
+LOAD_CONST       1            _            t680          ; load 1
+ARG_PUSH         t680         0            _           
+CALL             t679         1            t681        
+L_end93::
+LOAD_NAME        ret          _            t682          ; load ret
+LOAD_NAME        ret          _            t683          ; load ret
+LOAD_CONST       0            _            t684          ; load 0
+SUBSCRIPT        t683         t684         t685        
+LOAD_CONST       'RETURN'     _            t686          ; load string
+CMP_EQ           t685         t686         t687        
+AND              t682         t687         t688        
+BRANCH_IF_FALSE  t688         _            L_else94      ; if not test, go to else
+LOAD_NAME        ret          _            t689          ; load ret
+LOAD_CONST       1            _            t690          ; load 1
+SUBSCRIPT        t689         t690         t691        
+RETURN           t691         _            _             ; return value
+JUMP             L_end95      _            _             ; skip else
+L_else94::
+L_end95::
+LOAD_NAME        ret          _            t692          ; load ret
+LOAD_NAME        ret          _            t693          ; load ret
+LOAD_CONST       0            _            t694          ; load 0
+SUBSCRIPT        t693         t694         t695        
+LOAD_CONST       'JUMP'       _            t696          ; load string
+CMP_EQ           t695         t696         t697        
+AND              t692         t697         t698        
+BRANCH_IF_FALSE  t698         _            L_else96      ; if not test, go to else
+LOAD_NAME        ret          _            t699          ; load ret
+LOAD_CONST       1            _            t700          ; load 1
+SUBSCRIPT        t699         t700         t701        
+LOAD_NAME        self         _            t702          ; load self
+LOAD_ATTR        t702         label_map    t703          ; getattr label_map
+CMP_NOT_IN       t701         t703         t704        
+BRANCH_IF_FALSE  t704         _            L_else98      ; if not test, go to else
+LOAD_NAME        print        _            t705          ; load print
+LOAD_CONST       '未知標籤: '     _            t706          ; load string
+LOAD_NAME        str          _            t707          ; load str
+LOAD_NAME        ret          _            t708          ; load ret
+LOAD_CONST       1            _            t709          ; load 1
+SUBSCRIPT        t708         t709         t710        
+ARG_PUSH         t710         0            _           
+CALL             t707         1            t711        
+ADD              t706         t711         t712        
+ARG_PUSH         t712         0            _           
+CALL             t705         1            t713        
+LOAD_NAME        sys          _            t714          ; load sys
+LOAD_ATTR        t714         exit         t715          ; getattr exit
+LOAD_CONST       1            _            t716          ; load 1
+ARG_PUSH         t716         0            _           
+CALL             t715         1            t717        
+JUMP             L_end99      _            _             ; skip else
+L_else98::
+L_end99::
+LOAD_NAME        self         _            t718          ; load self
+LOAD_ATTR        t718         label_map    t719          ; getattr label_map
+LOAD_NAME        ret          _            t720          ; load ret
+LOAD_CONST       1            _            t721          ; load 1
+SUBSCRIPT        t720         t721         t722        
+SUBSCRIPT        t719         t722         t723        
+LOAD_NAME        frame        _            t724          ; load frame
+STORE_ATTR       t724         pc           t723        
+CONTINUE         _            _            _           
+JUMP             L_end97      _            _             ; skip else
+L_else96::
+L_end97::
+LOAD_NAME        frame        _            t725          ; load frame
+LOAD_ATTR        t725         pc           t726          ; getattr pc
+LOAD_CONST       1            _            t727          ; load 1
+ADD              t726         t727         t728        
+LOAD_NAME        frame        _            t729          ; load frame
+STORE_ATTR       t729         pc           t728        
+JUMP             L_while_start84 _            _             ; loop back
+L_while_end85::
+LOAD_NAME        frame        _            t730          ; load frame
+LOAD_ATTR        t730         return_value t731          ; getattr return_value
+RETURN           t731         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            _run_frame  
+FUNCTION         _            _            _exec         ; function _exec
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            self        
+PARAM            _            _            inst        
+PARAM            _            _            frame       
+LOAD_NAME        inst         _            t732          ; load inst
+LOAD_ATTR        t732         op           t733          ; getattr op
+STORE            t733         _            op            ; assign op
+LOAD_NAME        inst         _            t734          ; load inst
+LOAD_ATTR        t734         arg1         t735          ; getattr arg1
+STORE            t735         _            a1            ; assign a1
+LOAD_NAME        inst         _            t736          ; load inst
+LOAD_ATTR        t736         arg2         t737          ; getattr arg2
+STORE            t737         _            a2            ; assign a2
+LOAD_NAME        inst         _            t738          ; load inst
+LOAD_ATTR        t738         result       t739          ; getattr result
+STORE            t739         _            r             ; assign r
+FUNCTION         _            _            V             ; function V
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            t           
+LOAD_NAME        t            _            t740          ; load t
+LOAD_CONST       None         _            t741          ; load None
+CMP_IS           t740         t741         t742        
+LOAD_NAME        t            _            t743          ; load t
+LOAD_CONST       '_'          _            t744          ; load string
+CMP_EQ           t743         t744         t745        
+OR               t742         t745         t746        
+BRANCH_IF_FALSE  t746         _            L_else100     ; if not test, go to else
+LOAD_CONST       None         _            t747          ; load None
+RETURN           t747         _            _             ; return value
+JUMP             L_end101     _            _             ; skip else
+L_else100::
+L_end101::
+LOAD_NAME        frame        _            t748          ; load frame
+LOAD_ATTR        t748         resolve      t749          ; getattr resolve
+LOAD_NAME        t            _            t750          ; load t
+ARG_PUSH         t750         0            _           
+CALL             t749         1            t751        
+RETURN           t751         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            V           
+FUNCTION         _            _            lit           ; function lit
+ENTER_SCOPE      _            _            _           
+PARAM            _            _            t           
+LOAD_NAME        t            _            t752          ; load t
+LOAD_CONST       None         _            t753          ; load None
+CMP_IS           t752         t753         t754        
+LOAD_NAME        t            _            t755          ; load t
+LOAD_CONST       '_'          _            t756          ; load string
+CMP_EQ           t755         t756         t757        
+OR               t754         t757         t758        
+BRANCH_IF_FALSE  t758         _            L_else102     ; if not test, go to else
+LOAD_CONST       None         _            t759          ; load None
+RETURN           t759         _            _             ; return value
+JUMP             L_end103     _            _             ; skip else
+L_else102::
+L_end103::
+LOAD_NAME        parse_value  _            t760          ; load parse_value
+LOAD_NAME        t            _            t761          ; load t
+ARG_PUSH         t761         0            _           
+CALL             t760         1            t762        
+RETURN           t762         _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            lit         
+LOAD_NAME        op           _            t763          ; load op
+LOAD_CONST       'LOAD_CONST' _            t764          ; load string
+CMP_EQ           t763         t764         t765        
+BRANCH_IF_FALSE  t765         _            L_else104     ; if not test, go to else
+LOAD_NAME        frame        _            t766          ; load frame
+LOAD_ATTR        t766         set_local    t767          ; getattr set_local
+LOAD_NAME        r            _            t768          ; load r
+LOAD_NAME        lit          _            t769          ; load lit
+LOAD_NAME        a1           _            t770          ; load a1
+ARG_PUSH         t770         0            _           
+CALL             t769         1            t771        
+ARG_PUSH         t768         0            _           
+ARG_PUSH         t771         1            _           
+CALL             t767         2            t772        
+JUMP             L_end105     _            _             ; skip else
+L_else104::
+LOAD_NAME        op           _            t773          ; load op
+LOAD_CONST       'LOAD_NAME'  _            t774          ; load string
+CMP_EQ           t773         t774         t775        
+BRANCH_IF_FALSE  t775         _            L_else106     ; if not test, go to else
+LOAD_NAME        frame        _            t776          ; load frame
+LOAD_ATTR        t776         set_local    t777          ; getattr set_local
+LOAD_NAME        r            _            t778          ; load r
+LOAD_NAME        V            _            t779          ; load V
+LOAD_NAME        a1           _            t780          ; load a1
+ARG_PUSH         t780         0            _           
+CALL             t779         1            t781        
+ARG_PUSH         t778         0            _           
+ARG_PUSH         t781         1            _           
+CALL             t777         2            t782        
+JUMP             L_end107     _            _             ; skip else
+L_else106::
+LOAD_NAME        op           _            t783          ; load op
+LOAD_CONST       'LOAD_ATTR'  _            t784          ; load string
+CMP_EQ           t783         t784         t785        
+BRANCH_IF_FALSE  t785         _            L_else108     ; if not test, go to else
+LOAD_NAME        frame        _            t786          ; load frame
+LOAD_ATTR        t786         set_local    t787          ; getattr set_local
+LOAD_NAME        r            _            t788          ; load r
+LOAD_NAME        getattr      _            t789          ; load getattr
+LOAD_NAME        V            _            t790          ; load V
+LOAD_NAME        a1           _            t791          ; load a1
+ARG_PUSH         t791         0            _           
+CALL             t790         1            t792        
+LOAD_NAME        a2           _            t793          ; load a2
+ARG_PUSH         t792         0            _           
+ARG_PUSH         t793         1            _           
+CALL             t789         2            t794        
+ARG_PUSH         t788         0            _           
+ARG_PUSH         t794         1            _           
+CALL             t787         2            t795        
+JUMP             L_end109     _            _             ; skip else
+L_else108::
+LOAD_NAME        op           _            t796          ; load op
+LOAD_CONST       'STORE'      _            t797          ; load string
+CMP_EQ           t796         t797         t798        
+BRANCH_IF_FALSE  t798         _            L_else110     ; if not test, go to else
+LOAD_NAME        V            _            t799          ; load V
+LOAD_NAME        a1           _            t800          ; load a1
+ARG_PUSH         t800         0            _           
+CALL             t799         1            t801        
+LOAD_NAME        frame        _            t802          ; load frame
+LOAD_ATTR        t802         globals_env  t803          ; getattr globals_env
+LOAD_NAME        r            _            t804          ; load r
+SUBSCRIPT_SET    t803         t804         t801        
+LOAD_NAME        frame        _            t805          ; load frame
+LOAD_ATTR        t805         set_local    t806          ; getattr set_local
+LOAD_NAME        r            _            t807          ; load r
+LOAD_NAME        V            _            t808          ; load V
+LOAD_NAME        a1           _            t809          ; load a1
+ARG_PUSH         t809         0            _           
+CALL             t808         1            t810        
+ARG_PUSH         t807         0            _           
+ARG_PUSH         t810         1            _           
+CALL             t806         2            t811        
+JUMP             L_end111     _            _             ; skip else
+L_else110::
+LOAD_NAME        op           _            t812          ; load op
+LOAD_CONST       'DICT_INSERT' _            t813          ; load string
+CMP_EQ           t812         t813         t814        
+BRANCH_IF_FALSE  t814         _            L_else112     ; if not test, go to else
+LOAD_NAME        frame        _            t815          ; load frame
+LOAD_ATTR        t815         dict_buffer  t816          ; getattr dict_buffer
+LOAD_ATTR        t816         append       t817          ; getattr append
+LOAD_NAME        V            _            t818          ; load V
+LOAD_NAME        a1           _            t819          ; load a1
+ARG_PUSH         t819         0            _           
+CALL             t818         1            t820        
+LOAD_NAME        V            _            t821          ; load V
+LOAD_NAME        a2           _            t822          ; load a2
+ARG_PUSH         t822         0            _           
+CALL             t821         1            t823        
+TUPLE_APPEND     t820         0            _           
+TUPLE_APPEND     t823         1            _           
+BUILD_TUPLE      2            _            t824        
+ARG_PUSH         t824         0            _           
+CALL             t817         1            t825        
+JUMP             L_end113     _            _             ; skip else
+L_else112::
+LOAD_NAME        op           _            t826          ; load op
+LOAD_CONST       'BUILD_DICT' _            t827          ; load string
+CMP_EQ           t826         t827         t828        
+BRANCH_IF_FALSE  t828         _            L_else114     ; if not test, go to else
+LOAD_NAME        int          _            t829          ; load int
+LOAD_NAME        lit          _            t830          ; load lit
+LOAD_NAME        a1           _            t831          ; load a1
+ARG_PUSH         t831         0            _           
+CALL             t830         1            t832        
+ARG_PUSH         t832         0            _           
+CALL             t829         1            t833        
+STORE            t833         _            count         ; assign count
+LOAD_NAME        frame        _            t834          ; load frame
+LOAD_ATTR        t834         dict_buffer  t835          ; getattr dict_buffer
+LOAD_NAME        count        _            t836          ; load count
+NEG              t836         _            t837        
+SUBSCRIPT        t835         t837:_:_     t838        
+STORE            t838         _            items         ; assign items
+BUILD_DICT       0            _            t839        
+STORE            t839         _            d             ; assign d
+LOAD_NAME        items        _            t840          ; load items
+GET_ITER         t840         _            t841        
+L_for_start116::
+ITER_NEXT        t841         _            t842        
+BRANCH_IF_EXHAUST t841         _            L_for_end117
+STORE            t842         _            kv            ; assign kv
+LOAD_NAME        kv           _            t843          ; load kv
+LOAD_CONST       1            _            t844          ; load 1
+SUBSCRIPT        t843         t844         t845        
+LOAD_NAME        d            _            t846          ; load d
+LOAD_NAME        kv           _            t847          ; load kv
+LOAD_CONST       0            _            t848          ; load 0
+SUBSCRIPT        t847         t848         t849        
+SUBSCRIPT_SET    t846         t849         t845        
+JUMP             L_for_start116 _            _             ; loop back
+L_for_end117::
+LOAD_NAME        frame        _            t850          ; load frame
+LOAD_ATTR        t850         set_local    t851          ; getattr set_local
+LOAD_NAME        r            _            t852          ; load r
+LOAD_NAME        d            _            t853          ; load d
+ARG_PUSH         t852         0            _           
+ARG_PUSH         t853         1            _           
+CALL             t851         2            t854        
+JUMP             L_end115     _            _             ; skip else
+L_else114::
+LOAD_NAME        op           _            t855          ; load op
+LOAD_CONST       'LIST_APPEND' _            t856          ; load string
+CMP_EQ           t855         t856         t857        
+BRANCH_IF_FALSE  t857         _            L_else118     ; if not test, go to else
+LOAD_NAME        frame        _            t858          ; load frame
+LOAD_ATTR        t858         list_buffer  t859          ; getattr list_buffer
+LOAD_ATTR        t859         append       t860          ; getattr append
+LOAD_NAME        int          _            t861          ; load int
+LOAD_NAME        lit          _            t862          ; load lit
+LOAD_NAME        a2           _            t863          ; load a2
+ARG_PUSH         t863         0            _           
+CALL             t862         1            t864        
+ARG_PUSH         t864         0            _           
+CALL             t861         1            t865        
+LOAD_NAME        V            _            t866          ; load V
+LOAD_NAME        a1           _            t867          ; load a1
+ARG_PUSH         t867         0            _           
+CALL             t866         1            t868        
+TUPLE_APPEND     t865         0            _           
+TUPLE_APPEND     t868         1            _           
+BUILD_TUPLE      2            _            t869        
+ARG_PUSH         t869         0            _           
+CALL             t860         1            t870        
+JUMP             L_end119     _            _             ; skip else
+L_else118::
+LOAD_NAME        op           _            t871          ; load op
+LOAD_CONST       'BUILD_LIST' _            t872          ; load string
+CMP_EQ           t871         t872         t873        
+BRANCH_IF_FALSE  t873         _            L_else120     ; if not test, go to else
+LOAD_NAME        int          _            t874          ; load int
+LOAD_NAME        lit          _            t875          ; load lit
+LOAD_NAME        a1           _            t876          ; load a1
+ARG_PUSH         t876         0            _           
+CALL             t875         1            t877        
+ARG_PUSH         t877         0            _           
+CALL             t874         1            t878        
+STORE            t878         _            count         ; assign count
+LOAD_NAME        frame        _            t879          ; load frame
+LOAD_ATTR        t879         list_buffer  t880          ; getattr list_buffer
+LOAD_NAME        count        _            t881          ; load count
+NEG              t881         _            t882        
+SUBSCRIPT        t880         t882:_:_     t883        
+STORE            t883         _            items_raw     ; assign items_raw
+LOAD_NAME        len          _            t884          ; load len
+LOAD_NAME        items_raw    _            t885          ; load items_raw
+ARG_PUSH         t885         0            _           
+CALL             t884         1            t886        
+STORE            t886         _            n_items       ; assign n_items
+LOAD_NAME        range        _            t887          ; load range
+LOAD_NAME        n_items      _            t888          ; load n_items
+ARG_PUSH         t888         0            _           
+CALL             t887         1            t889        
+GET_ITER         t889         _            t890        
+L_for_start122::
+ITER_NEXT        t890         _            t891        
+BRANCH_IF_EXHAUST t890         _            L_for_end123
+STORE            t891         _            i             ; assign i
+LOAD_NAME        range        _            t892          ; load range
+LOAD_CONST       0            _            t893          ; load 0
+LOAD_NAME        n_items      _            t894          ; load n_items
+LOAD_NAME        i            _            t895          ; load i
+SUB              t894         t895         t896        
+LOAD_CONST       1            _            t897          ; load 1
+SUB              t896         t897         t898        
+ARG_PUSH         t893         0            _           
+ARG_PUSH         t898         1            _           
+CALL             t892         2            t899        
+GET_ITER         t899         _            t900        
+L_for_start124::
+ITER_NEXT        t900         _            t901        
+BRANCH_IF_EXHAUST t900         _            L_for_end125
+STORE            t901         _            j             ; assign j
+LOAD_NAME        items_raw    _            t902          ; load items_raw
+LOAD_NAME        j            _            t903          ; load j
+SUBSCRIPT        t902         t903         t904        
+LOAD_CONST       0            _            t905          ; load 0
+SUBSCRIPT        t904         t905         t906        
+LOAD_NAME        items_raw    _            t907          ; load items_raw
+LOAD_NAME        j            _            t908          ; load j
+LOAD_CONST       1            _            t909          ; load 1
+ADD              t908         t909         t910        
+SUBSCRIPT        t907         t910         t911        
+LOAD_CONST       0            _            t912          ; load 0
+SUBSCRIPT        t911         t912         t913        
+CMP_GT           t906         t913         t914        
+BRANCH_IF_FALSE  t914         _            L_else126     ; if not test, go to else
+LOAD_NAME        items_raw    _            t915          ; load items_raw
+LOAD_NAME        j            _            t916          ; load j
+SUBSCRIPT        t915         t916         t917        
+STORE            t917         _            tmp           ; assign tmp
+LOAD_NAME        items_raw    _            t918          ; load items_raw
+LOAD_NAME        j            _            t919          ; load j
+LOAD_CONST       1            _            t920          ; load 1
+ADD              t919         t920         t921        
+SUBSCRIPT        t918         t921         t922        
+LOAD_NAME        items_raw    _            t923          ; load items_raw
+LOAD_NAME        j            _            t924          ; load j
+SUBSCRIPT_SET    t923         t924         t922        
+LOAD_NAME        tmp          _            t925          ; load tmp
+LOAD_NAME        items_raw    _            t926          ; load items_raw
+LOAD_NAME        j            _            t927          ; load j
+LOAD_CONST       1            _            t928          ; load 1
+ADD              t927         t928         t929        
+SUBSCRIPT_SET    t926         t929         t925        
+JUMP             L_end127     _            _             ; skip else
+L_else126::
+L_end127::
+JUMP             L_for_start124 _            _             ; loop back
+L_for_end125::
+JUMP             L_for_start122 _            _             ; loop back
+L_for_end123::
+BUILD_LIST       0            _            t930        
+STORE            t930         _            lst           ; assign lst
+LOAD_NAME        items_raw    _            t931          ; load items_raw
+GET_ITER         t931         _            t932        
+L_for_start128::
+ITER_NEXT        t932         _            t933        
+BRANCH_IF_EXHAUST t932         _            L_for_end129
+STORE            t933         _            item          ; assign item
+LOAD_NAME        lst          _            t934          ; load lst
+LOAD_ATTR        t934         append       t935          ; getattr append
+LOAD_NAME        item         _            t936          ; load item
+LOAD_CONST       1            _            t937          ; load 1
+SUBSCRIPT        t936         t937         t938        
+ARG_PUSH         t938         0            _           
+CALL             t935         1            t939        
+JUMP             L_for_start128 _            _             ; loop back
+L_for_end129::
+LOAD_NAME        frame        _            t940          ; load frame
+LOAD_ATTR        t940         set_local    t941          ; getattr set_local
+LOAD_NAME        r            _            t942          ; load r
+LOAD_NAME        lst          _            t943          ; load lst
+ARG_PUSH         t942         0            _           
+ARG_PUSH         t943         1            _           
+CALL             t941         2            t944        
+JUMP             L_end121     _            _             ; skip else
+L_else120::
+LOAD_NAME        op           _            t945          ; load op
+LOAD_CONST       'SUBSCRIPT'  _            t946          ; load string
+CMP_EQ           t945         t946         t947        
+BRANCH_IF_FALSE  t947         _            L_else130     ; if not test, go to else
+LOAD_NAME        frame        _            t948          ; load frame
+LOAD_ATTR        t948         set_local    t949          ; getattr set_local
+LOAD_NAME        r            _            t950          ; load r
+LOAD_NAME        V            _            t951          ; load V
+LOAD_NAME        a1           _            t952          ; load a1
+ARG_PUSH         t952         0            _           
+CALL             t951         1            t953        
+LOAD_NAME        V            _            t954          ; load V
+LOAD_NAME        a2           _            t955          ; load a2
+ARG_PUSH         t955         0            _           
+CALL             t954         1            t956        
+SUBSCRIPT        t953         t956         t957        
+ARG_PUSH         t950         0            _           
+ARG_PUSH         t957         1            _           
+CALL             t949         2            t958        
+JUMP             L_end131     _            _             ; skip else
+L_else130::
+LOAD_NAME        op           _            t959          ; load op
+LOAD_CONST       'ADD'        _            t960          ; load string
+CMP_EQ           t959         t960         t961        
+BRANCH_IF_FALSE  t961         _            L_else132     ; if not test, go to else
+LOAD_NAME        frame        _            t962          ; load frame
+LOAD_ATTR        t962         set_local    t963          ; getattr set_local
+LOAD_NAME        r            _            t964          ; load r
+LOAD_NAME        V            _            t965          ; load V
+LOAD_NAME        a1           _            t966          ; load a1
+ARG_PUSH         t966         0            _           
+CALL             t965         1            t967        
+LOAD_NAME        V            _            t968          ; load V
+LOAD_NAME        a2           _            t969          ; load a2
+ARG_PUSH         t969         0            _           
+CALL             t968         1            t970        
+ADD              t967         t970         t971        
+ARG_PUSH         t964         0            _           
+ARG_PUSH         t971         1            _           
+CALL             t963         2            t972        
+JUMP             L_end133     _            _             ; skip else
+L_else132::
+LOAD_NAME        op           _            t973          ; load op
+LOAD_CONST       'SUB'        _            t974          ; load string
+CMP_EQ           t973         t974         t975        
+BRANCH_IF_FALSE  t975         _            L_else134     ; if not test, go to else
+LOAD_NAME        frame        _            t976          ; load frame
+LOAD_ATTR        t976         set_local    t977          ; getattr set_local
+LOAD_NAME        r            _            t978          ; load r
+LOAD_NAME        V            _            t979          ; load V
+LOAD_NAME        a1           _            t980          ; load a1
+ARG_PUSH         t980         0            _           
+CALL             t979         1            t981        
+LOAD_NAME        V            _            t982          ; load V
+LOAD_NAME        a2           _            t983          ; load a2
+ARG_PUSH         t983         0            _           
+CALL             t982         1            t984        
+SUB              t981         t984         t985        
+ARG_PUSH         t978         0            _           
+ARG_PUSH         t985         1            _           
+CALL             t977         2            t986        
+JUMP             L_end135     _            _             ; skip else
+L_else134::
+LOAD_NAME        op           _            t987          ; load op
+LOAD_CONST       'MUL'        _            t988          ; load string
+CMP_EQ           t987         t988         t989        
+BRANCH_IF_FALSE  t989         _            L_else136     ; if not test, go to else
+LOAD_NAME        frame        _            t990          ; load frame
+LOAD_ATTR        t990         set_local    t991          ; getattr set_local
+LOAD_NAME        r            _            t992          ; load r
+LOAD_NAME        V            _            t993          ; load V
+LOAD_NAME        a1           _            t994          ; load a1
+ARG_PUSH         t994         0            _           
+CALL             t993         1            t995        
+LOAD_NAME        V            _            t996          ; load V
+LOAD_NAME        a2           _            t997          ; load a2
+ARG_PUSH         t997         0            _           
+CALL             t996         1            t998        
+MUL              t995         t998         t999        
+ARG_PUSH         t992         0            _           
+ARG_PUSH         t999         1            _           
+CALL             t991         2            t1000       
+JUMP             L_end137     _            _             ; skip else
+L_else136::
+LOAD_NAME        op           _            t1001         ; load op
+LOAD_CONST       'DIV'        _            t1002         ; load string
+CMP_EQ           t1001        t1002        t1003       
+BRANCH_IF_FALSE  t1003        _            L_else138     ; if not test, go to else
+LOAD_NAME        frame        _            t1004         ; load frame
+LOAD_ATTR        t1004        set_local    t1005         ; getattr set_local
+LOAD_NAME        r            _            t1006         ; load r
+LOAD_NAME        V            _            t1007         ; load V
+LOAD_NAME        a1           _            t1008         ; load a1
+ARG_PUSH         t1008        0            _           
+CALL             t1007        1            t1009       
+LOAD_NAME        V            _            t1010         ; load V
+LOAD_NAME        a2           _            t1011         ; load a2
+ARG_PUSH         t1011        0            _           
+CALL             t1010        1            t1012       
+DIV              t1009        t1012        t1013       
+ARG_PUSH         t1006        0            _           
+ARG_PUSH         t1013        1            _           
+CALL             t1005        2            t1014       
+JUMP             L_end139     _            _             ; skip else
+L_else138::
+LOAD_NAME        op           _            t1015         ; load op
+LOAD_CONST       'MOD'        _            t1016         ; load string
+CMP_EQ           t1015        t1016        t1017       
+BRANCH_IF_FALSE  t1017        _            L_else140     ; if not test, go to else
+LOAD_NAME        frame        _            t1018         ; load frame
+LOAD_ATTR        t1018        set_local    t1019         ; getattr set_local
+LOAD_NAME        r            _            t1020         ; load r
+LOAD_NAME        V            _            t1021         ; load V
+LOAD_NAME        a1           _            t1022         ; load a1
+ARG_PUSH         t1022        0            _           
+CALL             t1021        1            t1023       
+LOAD_NAME        V            _            t1024         ; load V
+LOAD_NAME        a2           _            t1025         ; load a2
+ARG_PUSH         t1025        0            _           
+CALL             t1024        1            t1026       
+MOD              t1023        t1026        t1027       
+ARG_PUSH         t1020        0            _           
+ARG_PUSH         t1027        1            _           
+CALL             t1019        2            t1028       
+JUMP             L_end141     _            _             ; skip else
+L_else140::
+LOAD_NAME        op           _            t1029         ; load op
+LOAD_CONST       'NEG'        _            t1030         ; load string
+CMP_EQ           t1029        t1030        t1031       
+BRANCH_IF_FALSE  t1031        _            L_else142     ; if not test, go to else
+LOAD_NAME        frame        _            t1032         ; load frame
+LOAD_ATTR        t1032        set_local    t1033         ; getattr set_local
+LOAD_NAME        r            _            t1034         ; load r
+LOAD_NAME        V            _            t1035         ; load V
+LOAD_NAME        a1           _            t1036         ; load a1
+ARG_PUSH         t1036        0            _           
+CALL             t1035        1            t1037       
+NEG              t1037        _            t1038       
+ARG_PUSH         t1034        0            _           
+ARG_PUSH         t1038        1            _           
+CALL             t1033        2            t1039       
+JUMP             L_end143     _            _             ; skip else
+L_else142::
+LOAD_NAME        op           _            t1040         ; load op
+LOAD_CONST       'CMP_EQ'     _            t1041         ; load string
+CMP_EQ           t1040        t1041        t1042       
+BRANCH_IF_FALSE  t1042        _            L_else144     ; if not test, go to else
+LOAD_NAME        frame        _            t1043         ; load frame
+LOAD_ATTR        t1043        set_local    t1044         ; getattr set_local
+LOAD_NAME        r            _            t1045         ; load r
+LOAD_NAME        V            _            t1046         ; load V
+LOAD_NAME        a1           _            t1047         ; load a1
+ARG_PUSH         t1047        0            _           
+CALL             t1046        1            t1048       
+LOAD_NAME        V            _            t1049         ; load V
+LOAD_NAME        a2           _            t1050         ; load a2
+ARG_PUSH         t1050        0            _           
+CALL             t1049        1            t1051       
+CMP_EQ           t1048        t1051        t1052       
+ARG_PUSH         t1045        0            _           
+ARG_PUSH         t1052        1            _           
+CALL             t1044        2            t1053       
+JUMP             L_end145     _            _             ; skip else
+L_else144::
+LOAD_NAME        op           _            t1054         ; load op
+LOAD_CONST       'CMP_NE'     _            t1055         ; load string
+CMP_EQ           t1054        t1055        t1056       
+BRANCH_IF_FALSE  t1056        _            L_else146     ; if not test, go to else
+LOAD_NAME        frame        _            t1057         ; load frame
+LOAD_ATTR        t1057        set_local    t1058         ; getattr set_local
+LOAD_NAME        r            _            t1059         ; load r
+LOAD_NAME        V            _            t1060         ; load V
+LOAD_NAME        a1           _            t1061         ; load a1
+ARG_PUSH         t1061        0            _           
+CALL             t1060        1            t1062       
+LOAD_NAME        V            _            t1063         ; load V
+LOAD_NAME        a2           _            t1064         ; load a2
+ARG_PUSH         t1064        0            _           
+CALL             t1063        1            t1065       
+CMP_NE           t1062        t1065        t1066       
+ARG_PUSH         t1059        0            _           
+ARG_PUSH         t1066        1            _           
+CALL             t1058        2            t1067       
+JUMP             L_end147     _            _             ; skip else
+L_else146::
+LOAD_NAME        op           _            t1068         ; load op
+LOAD_CONST       'CMP_LT'     _            t1069         ; load string
+CMP_EQ           t1068        t1069        t1070       
+BRANCH_IF_FALSE  t1070        _            L_else148     ; if not test, go to else
+LOAD_NAME        frame        _            t1071         ; load frame
+LOAD_ATTR        t1071        set_local    t1072         ; getattr set_local
+LOAD_NAME        r            _            t1073         ; load r
+LOAD_NAME        V            _            t1074         ; load V
+LOAD_NAME        a1           _            t1075         ; load a1
+ARG_PUSH         t1075        0            _           
+CALL             t1074        1            t1076       
+LOAD_NAME        V            _            t1077         ; load V
+LOAD_NAME        a2           _            t1078         ; load a2
+ARG_PUSH         t1078        0            _           
+CALL             t1077        1            t1079       
+CMP_LT           t1076        t1079        t1080       
+ARG_PUSH         t1073        0            _           
+ARG_PUSH         t1080        1            _           
+CALL             t1072        2            t1081       
+JUMP             L_end149     _            _             ; skip else
+L_else148::
+LOAD_NAME        op           _            t1082         ; load op
+LOAD_CONST       'CMP_LE'     _            t1083         ; load string
+CMP_EQ           t1082        t1083        t1084       
+BRANCH_IF_FALSE  t1084        _            L_else150     ; if not test, go to else
+LOAD_NAME        frame        _            t1085         ; load frame
+LOAD_ATTR        t1085        set_local    t1086         ; getattr set_local
+LOAD_NAME        r            _            t1087         ; load r
+LOAD_NAME        V            _            t1088         ; load V
+LOAD_NAME        a1           _            t1089         ; load a1
+ARG_PUSH         t1089        0            _           
+CALL             t1088        1            t1090       
+LOAD_NAME        V            _            t1091         ; load V
+LOAD_NAME        a2           _            t1092         ; load a2
+ARG_PUSH         t1092        0            _           
+CALL             t1091        1            t1093       
+CMP_LE           t1090        t1093        t1094       
+ARG_PUSH         t1087        0            _           
+ARG_PUSH         t1094        1            _           
+CALL             t1086        2            t1095       
+JUMP             L_end151     _            _             ; skip else
+L_else150::
+LOAD_NAME        op           _            t1096         ; load op
+LOAD_CONST       'CMP_GT'     _            t1097         ; load string
+CMP_EQ           t1096        t1097        t1098       
+BRANCH_IF_FALSE  t1098        _            L_else152     ; if not test, go to else
+LOAD_NAME        frame        _            t1099         ; load frame
+LOAD_ATTR        t1099        set_local    t1100         ; getattr set_local
+LOAD_NAME        r            _            t1101         ; load r
+LOAD_NAME        V            _            t1102         ; load V
+LOAD_NAME        a1           _            t1103         ; load a1
+ARG_PUSH         t1103        0            _           
+CALL             t1102        1            t1104       
+LOAD_NAME        V            _            t1105         ; load V
+LOAD_NAME        a2           _            t1106         ; load a2
+ARG_PUSH         t1106        0            _           
+CALL             t1105        1            t1107       
+CMP_GT           t1104        t1107        t1108       
+ARG_PUSH         t1101        0            _           
+ARG_PUSH         t1108        1            _           
+CALL             t1100        2            t1109       
+JUMP             L_end153     _            _             ; skip else
+L_else152::
+LOAD_NAME        op           _            t1110         ; load op
+LOAD_CONST       'CMP_GE'     _            t1111         ; load string
+CMP_EQ           t1110        t1111        t1112       
+BRANCH_IF_FALSE  t1112        _            L_else154     ; if not test, go to else
+LOAD_NAME        frame        _            t1113         ; load frame
+LOAD_ATTR        t1113        set_local    t1114         ; getattr set_local
+LOAD_NAME        r            _            t1115         ; load r
+LOAD_NAME        V            _            t1116         ; load V
+LOAD_NAME        a1           _            t1117         ; load a1
+ARG_PUSH         t1117        0            _           
+CALL             t1116        1            t1118       
+LOAD_NAME        V            _            t1119         ; load V
+LOAD_NAME        a2           _            t1120         ; load a2
+ARG_PUSH         t1120        0            _           
+CALL             t1119        1            t1121       
+CMP_GE           t1118        t1121        t1122       
+ARG_PUSH         t1115        0            _           
+ARG_PUSH         t1122        1            _           
+CALL             t1114        2            t1123       
+JUMP             L_end155     _            _             ; skip else
+L_else154::
+LOAD_NAME        op           _            t1124         ; load op
+LOAD_CONST       'OR'         _            t1125         ; load string
+CMP_EQ           t1124        t1125        t1126       
+BRANCH_IF_FALSE  t1126        _            L_else156     ; if not test, go to else
+LOAD_NAME        frame        _            t1127         ; load frame
+LOAD_ATTR        t1127        set_local    t1128         ; getattr set_local
+LOAD_NAME        r            _            t1129         ; load r
+LOAD_NAME        V            _            t1130         ; load V
+LOAD_NAME        a1           _            t1131         ; load a1
+ARG_PUSH         t1131        0            _           
+CALL             t1130        1            t1132       
+LOAD_NAME        V            _            t1133         ; load V
+LOAD_NAME        a2           _            t1134         ; load a2
+ARG_PUSH         t1134        0            _           
+CALL             t1133        1            t1135       
+OR               t1132        t1135        t1136       
+ARG_PUSH         t1129        0            _           
+ARG_PUSH         t1136        1            _           
+CALL             t1128        2            t1137       
+JUMP             L_end157     _            _             ; skip else
+L_else156::
+LOAD_NAME        op           _            t1138         ; load op
+LOAD_CONST       'AND'        _            t1139         ; load string
+CMP_EQ           t1138        t1139        t1140       
+BRANCH_IF_FALSE  t1140        _            L_else158     ; if not test, go to else
+LOAD_NAME        frame        _            t1141         ; load frame
+LOAD_ATTR        t1141        set_local    t1142         ; getattr set_local
+LOAD_NAME        r            _            t1143         ; load r
+LOAD_NAME        V            _            t1144         ; load V
+LOAD_NAME        a1           _            t1145         ; load a1
+ARG_PUSH         t1145        0            _           
+CALL             t1144        1            t1146       
+LOAD_NAME        V            _            t1147         ; load V
+LOAD_NAME        a2           _            t1148         ; load a2
+ARG_PUSH         t1148        0            _           
+CALL             t1147        1            t1149       
+AND              t1146        t1149        t1150       
+ARG_PUSH         t1143        0            _           
+ARG_PUSH         t1150        1            _           
+CALL             t1142        2            t1151       
+JUMP             L_end159     _            _             ; skip else
+L_else158::
+LOAD_NAME        op           _            t1152         ; load op
+LOAD_CONST       'NOT'        _            t1153         ; load string
+CMP_EQ           t1152        t1153        t1154       
+BRANCH_IF_FALSE  t1154        _            L_else160     ; if not test, go to else
+LOAD_NAME        frame        _            t1155         ; load frame
+LOAD_ATTR        t1155        set_local    t1156         ; getattr set_local
+LOAD_NAME        r            _            t1157         ; load r
+LOAD_NAME        V            _            t1158         ; load V
+LOAD_NAME        a1           _            t1159         ; load a1
+ARG_PUSH         t1159        0            _           
+CALL             t1158        1            t1160       
+NOT              t1160        _            t1161       
+ARG_PUSH         t1157        0            _           
+ARG_PUSH         t1161        1            _           
+CALL             t1156        2            t1162       
+JUMP             L_end161     _            _             ; skip else
+L_else160::
+LOAD_NAME        op           _            t1163         ; load op
+LOAD_CONST       'JUMP'       _            t1164         ; load string
+CMP_EQ           t1163        t1164        t1165       
+BRANCH_IF_FALSE  t1165        _            L_else162     ; if not test, go to else
+LOAD_CONST       'JUMP'       _            t1166         ; load string
+LOAD_NAME        a1           _            t1167         ; load a1
+TUPLE_APPEND     t1166        0            _           
+TUPLE_APPEND     t1167        1            _           
+BUILD_TUPLE      2            _            t1168       
+RETURN           t1168        _            _             ; return value
+JUMP             L_end163     _            _             ; skip else
+L_else162::
+LOAD_NAME        op           _            t1169         ; load op
+LOAD_CONST       'BRANCH_IF_TRUE' _            t1170         ; load string
+CMP_EQ           t1169        t1170        t1171       
+BRANCH_IF_FALSE  t1171        _            L_else164     ; if not test, go to else
+LOAD_NAME        V            _            t1172         ; load V
+LOAD_NAME        a1           _            t1173         ; load a1
+ARG_PUSH         t1173        0            _           
+CALL             t1172        1            t1174       
+BRANCH_IF_FALSE  t1174        _            L_else166     ; if not test, go to else
+LOAD_CONST       'JUMP'       _            t1175         ; load string
+LOAD_NAME        r            _            t1176         ; load r
+TUPLE_APPEND     t1175        0            _           
+TUPLE_APPEND     t1176        1            _           
+BUILD_TUPLE      2            _            t1177       
+RETURN           t1177        _            _             ; return value
+JUMP             L_end167     _            _             ; skip else
+L_else166::
+L_end167::
+JUMP             L_end165     _            _             ; skip else
+L_else164::
+LOAD_NAME        op           _            t1178         ; load op
+LOAD_CONST       'BRANCH_IF_FALSE' _            t1179         ; load string
+CMP_EQ           t1178        t1179        t1180       
+BRANCH_IF_FALSE  t1180        _            L_else168     ; if not test, go to else
+LOAD_NAME        V            _            t1181         ; load V
+LOAD_NAME        a1           _            t1182         ; load a1
+ARG_PUSH         t1182        0            _           
+CALL             t1181        1            t1183       
+NOT              t1183        _            t1184       
+BRANCH_IF_FALSE  t1184        _            L_else170     ; if not test, go to else
+LOAD_CONST       'JUMP'       _            t1185         ; load string
+LOAD_NAME        r            _            t1186         ; load r
+TUPLE_APPEND     t1185        0            _           
+TUPLE_APPEND     t1186        1            _           
+BUILD_TUPLE      2            _            t1187       
+RETURN           t1187        _            _             ; return value
+JUMP             L_end171     _            _             ; skip else
+L_else170::
+L_end171::
+JUMP             L_end169     _            _             ; skip else
+L_else168::
+LOAD_NAME        op           _            t1188         ; load op
+LOAD_CONST       'GET_ITER'   _            t1189         ; load string
+CMP_EQ           t1188        t1189        t1190       
+BRANCH_IF_FALSE  t1190        _            L_else172     ; if not test, go to else
+LOAD_NAME        frame        _            t1191         ; load frame
+LOAD_ATTR        t1191        set_local    t1192         ; getattr set_local
+LOAD_NAME        r            _            t1193         ; load r
+LOAD_NAME        iter         _            t1194         ; load iter
+LOAD_NAME        V            _            t1195         ; load V
+LOAD_NAME        a1           _            t1196         ; load a1
+ARG_PUSH         t1196        0            _           
+CALL             t1195        1            t1197       
+ARG_PUSH         t1197        0            _           
+CALL             t1194        1            t1198       
+ARG_PUSH         t1193        0            _           
+ARG_PUSH         t1198        1            _           
+CALL             t1192        2            t1199       
+JUMP             L_end173     _            _             ; skip else
+L_else172::
+LOAD_NAME        op           _            t1200         ; load op
+LOAD_CONST       'ITER_NEXT'  _            t1201         ; load string
+CMP_EQ           t1200        t1201        t1202       
+BRANCH_IF_FALSE  t1202        _            L_else174     ; if not test, go to else
+TRY_BEGIN        L_except177  _            _           
+LOAD_NAME        frame        _            t1203         ; load frame
+LOAD_ATTR        t1203        set_local    t1204         ; getattr set_local
+LOAD_NAME        r            _            t1205         ; load r
+LOAD_NAME        next         _            t1206         ; load next
+LOAD_NAME        V            _            t1207         ; load V
+LOAD_NAME        a1           _            t1208         ; load a1
+ARG_PUSH         t1208        0            _           
+CALL             t1207        1            t1209       
+ARG_PUSH         t1209        0            _           
+CALL             t1206        1            t1210       
+ARG_PUSH         t1205        0            _           
+ARG_PUSH         t1210        1            _           
+CALL             t1204        2            t1211       
+LOAD_CONST       False        _            t1212         ; load False
+LOAD_NAME        frame        _            t1213         ; load frame
+LOAD_ATTR        t1213        locals       t1214         ; getattr locals
+LOAD_CONST       '__exhaust_' _            t1215         ; load string
+LOAD_NAME        str          _            t1216         ; load str
+LOAD_NAME        a1           _            t1217         ; load a1
+ARG_PUSH         t1217        0            _           
+CALL             t1216        1            t1218       
+ADD              t1215        t1218        t1219       
+SUBSCRIPT_SET    t1214        t1219        t1212       
+TRY_END          _            _            _           
+JUMP             L_end179     _            _             ; skip except
+L_except177::
+LOAD_NAME        StopIteration _            t1220         ; load StopIteration
+MATCH_EXC        t1220        _            _             ; check exception type
+LOAD_CONST       True         _            t1221         ; load True
+LOAD_NAME        frame        _            t1222         ; load frame
+LOAD_ATTR        t1222        locals       t1223         ; getattr locals
+LOAD_CONST       '__exhaust_' _            t1224         ; load string
+LOAD_NAME        str          _            t1225         ; load str
+LOAD_NAME        a1           _            t1226         ; load a1
+ARG_PUSH         t1226        0            _           
+CALL             t1225        1            t1227       
+ADD              t1224        t1227        t1228       
+SUBSCRIPT_SET    t1223        t1228        t1221       
+L_end179::
+JUMP             L_end175     _            _             ; skip else
+L_else174::
+LOAD_NAME        op           _            t1229         ; load op
+LOAD_CONST       'BRANCH_IF_EXHAUST' _            t1230         ; load string
+CMP_EQ           t1229        t1230        t1231       
+BRANCH_IF_FALSE  t1231        _            L_else180     ; if not test, go to else
+LOAD_NAME        frame        _            t1232         ; load frame
+LOAD_ATTR        t1232        locals       t1233         ; getattr locals
+LOAD_ATTR        t1233        get          t1234         ; getattr get
+LOAD_CONST       '__exhaust_' _            t1235         ; load string
+LOAD_NAME        str          _            t1236         ; load str
+LOAD_NAME        a1           _            t1237         ; load a1
+ARG_PUSH         t1237        0            _           
+CALL             t1236        1            t1238       
+ADD              t1235        t1238        t1239       
+LOAD_CONST       False        _            t1240         ; load False
+ARG_PUSH         t1239        0            _           
+ARG_PUSH         t1240        1            _           
+CALL             t1234        2            t1241       
+BRANCH_IF_FALSE  t1241        _            L_else182     ; if not test, go to else
+LOAD_CONST       'JUMP'       _            t1242         ; load string
+LOAD_NAME        r            _            t1243         ; load r
+TUPLE_APPEND     t1242        0            _           
+TUPLE_APPEND     t1243        1            _           
+BUILD_TUPLE      2            _            t1244       
+RETURN           t1244        _            _             ; return value
+JUMP             L_end183     _            _             ; skip else
+L_else182::
+L_end183::
+JUMP             L_end181     _            _             ; skip else
+L_else180::
+LOAD_NAME        op           _            t1245         ; load op
+LOAD_CONST       'ARG_PUSH'   _            t1246         ; load string
+CMP_EQ           t1245        t1246        t1247       
+BRANCH_IF_FALSE  t1247        _            L_else184     ; if not test, go to else
+LOAD_NAME        frame        _            t1248         ; load frame
+LOAD_ATTR        t1248        arg_buffer   t1249         ; getattr arg_buffer
+LOAD_ATTR        t1249        append       t1250         ; getattr append
+LOAD_NAME        lit          _            t1251         ; load lit
+LOAD_NAME        a2           _            t1252         ; load a2
+ARG_PUSH         t1252        0            _           
+CALL             t1251        1            t1253       
+LOAD_NAME        V            _            t1254         ; load V
+LOAD_NAME        a1           _            t1255         ; load a1
+ARG_PUSH         t1255        0            _           
+CALL             t1254        1            t1256       
+TUPLE_APPEND     t1253        0            _           
+TUPLE_APPEND     t1256        1            _           
+BUILD_TUPLE      2            _            t1257       
+ARG_PUSH         t1257        0            _           
+CALL             t1250        1            t1258       
+JUMP             L_end185     _            _             ; skip else
+L_else184::
+LOAD_NAME        op           _            t1259         ; load op
+LOAD_CONST       'CALL'       _            t1260         ; load string
+CMP_EQ           t1259        t1260        t1261       
+BRANCH_IF_FALSE  t1261        _            L_else186     ; if not test, go to else
+LOAD_NAME        V            _            t1262         ; load V
+LOAD_NAME        a1           _            t1263         ; load a1
+ARG_PUSH         t1263        0            _           
+CALL             t1262        1            t1264       
+STORE            t1264        _            func          ; assign func
+LOAD_NAME        a2           _            t1265         ; load a2
+LOAD_NAME        a2           _            t1266         ; load a2
+LOAD_CONST       '_'          _            t1267         ; load string
+CMP_NE           t1266        t1267        t1268       
+AND              t1265        t1268        t1269       
+BRANCH_IF_FALSE  t1269        _            L_else188     ; if not test, go to else
+LOAD_NAME        int          _            t1270         ; load int
+LOAD_NAME        lit          _            t1271         ; load lit
+LOAD_NAME        a2           _            t1272         ; load a2
+ARG_PUSH         t1272        0            _           
+CALL             t1271        1            t1273       
+ARG_PUSH         t1273        0            _           
+CALL             t1270        1            t1274       
+STORE            t1274        _            argc          ; assign argc
+JUMP             L_end189     _            _             ; skip else
+L_else188::
+LOAD_NAME        len          _            t1275         ; load len
+LOAD_NAME        frame        _            t1276         ; load frame
+LOAD_ATTR        t1276        arg_buffer   t1277         ; getattr arg_buffer
+ARG_PUSH         t1277        0            _           
+CALL             t1275        1            t1278       
+STORE            t1278        _            argc          ; assign argc
+L_end189::
+LOAD_NAME        frame        _            t1279         ; load frame
+LOAD_ATTR        t1279        arg_buffer   t1280         ; getattr arg_buffer
+LOAD_NAME        argc         _            t1281         ; load argc
+NEG              t1281        _            t1282       
+SUBSCRIPT        t1280        t1282:_:_    t1283       
+STORE            t1283        _            raw_args      ; assign raw_args
+LOAD_NAME        len          _            t1284         ; load len
+LOAD_NAME        raw_args     _            t1285         ; load raw_args
+ARG_PUSH         t1285        0            _           
+CALL             t1284        1            t1286       
+STORE            t1286        _            n_args        ; assign n_args
+LOAD_NAME        range        _            t1287         ; load range
+LOAD_NAME        n_args       _            t1288         ; load n_args
+ARG_PUSH         t1288        0            _           
+CALL             t1287        1            t1289       
+GET_ITER         t1289        _            t1290       
+L_for_start190::
+ITER_NEXT        t1290        _            t1291       
+BRANCH_IF_EXHAUST t1290        _            L_for_end191
+STORE            t1291        _            i             ; assign i
+LOAD_NAME        range        _            t1292         ; load range
+LOAD_CONST       0            _            t1293         ; load 0
+LOAD_NAME        n_args       _            t1294         ; load n_args
+LOAD_NAME        i            _            t1295         ; load i
+SUB              t1294        t1295        t1296       
+LOAD_CONST       1            _            t1297         ; load 1
+SUB              t1296        t1297        t1298       
+ARG_PUSH         t1293        0            _           
+ARG_PUSH         t1298        1            _           
+CALL             t1292        2            t1299       
+GET_ITER         t1299        _            t1300       
+L_for_start192::
+ITER_NEXT        t1300        _            t1301       
+BRANCH_IF_EXHAUST t1300        _            L_for_end193
+STORE            t1301        _            j             ; assign j
+LOAD_NAME        raw_args     _            t1302         ; load raw_args
+LOAD_NAME        j            _            t1303         ; load j
+SUBSCRIPT        t1302        t1303        t1304       
+LOAD_CONST       0            _            t1305         ; load 0
+SUBSCRIPT        t1304        t1305        t1306       
+STORE            t1306        _            idx1          ; assign idx1
+LOAD_NAME        raw_args     _            t1307         ; load raw_args
+LOAD_NAME        j            _            t1308         ; load j
+LOAD_CONST       1            _            t1309         ; load 1
+ADD              t1308        t1309        t1310       
+SUBSCRIPT        t1307        t1310        t1311       
+LOAD_CONST       0            _            t1312         ; load 0
+SUBSCRIPT        t1311        t1312        t1313       
+STORE            t1313        _            idx2          ; assign idx2
+LOAD_NAME        idx1         _            t1314         ; load idx1
+STORE            t1314        _            val1          ; assign val1
+LOAD_NAME        idx1         _            t1315         ; load idx1
+LOAD_CONST       None         _            t1316         ; load None
+CMP_IS           t1315        t1316        t1317       
+BRANCH_IF_FALSE  t1317        _            L_else194     ; if not test, go to else
+LOAD_CONST       999999       _            t1318         ; load 999999
+STORE            t1318        _            val1          ; assign val1
+JUMP             L_end195     _            _             ; skip else
+L_else194::
+L_end195::
+LOAD_NAME        idx2         _            t1319         ; load idx2
+STORE            t1319        _            val2          ; assign val2
+LOAD_NAME        idx2         _            t1320         ; load idx2
+LOAD_CONST       None         _            t1321         ; load None
+CMP_IS           t1320        t1321        t1322       
+BRANCH_IF_FALSE  t1322        _            L_else196     ; if not test, go to else
+LOAD_CONST       999999       _            t1323         ; load 999999
+STORE            t1323        _            val2          ; assign val2
+JUMP             L_end197     _            _             ; skip else
+L_else196::
+L_end197::
+LOAD_NAME        val1         _            t1324         ; load val1
+LOAD_NAME        val2         _            t1325         ; load val2
+CMP_GT           t1324        t1325        t1326       
+BRANCH_IF_FALSE  t1326        _            L_else198     ; if not test, go to else
+LOAD_NAME        raw_args     _            t1327         ; load raw_args
+LOAD_NAME        j            _            t1328         ; load j
+SUBSCRIPT        t1327        t1328        t1329       
+STORE            t1329        _            tmp           ; assign tmp
+LOAD_NAME        raw_args     _            t1330         ; load raw_args
+LOAD_NAME        j            _            t1331         ; load j
+LOAD_CONST       1            _            t1332         ; load 1
+ADD              t1331        t1332        t1333       
+SUBSCRIPT        t1330        t1333        t1334       
+LOAD_NAME        raw_args     _            t1335         ; load raw_args
+LOAD_NAME        j            _            t1336         ; load j
+SUBSCRIPT_SET    t1335        t1336        t1334       
+LOAD_NAME        tmp          _            t1337         ; load tmp
+LOAD_NAME        raw_args     _            t1338         ; load raw_args
+LOAD_NAME        j            _            t1339         ; load j
+LOAD_CONST       1            _            t1340         ; load 1
+ADD              t1339        t1340        t1341       
+SUBSCRIPT_SET    t1338        t1341        t1337       
+JUMP             L_end199     _            _             ; skip else
+L_else198::
+L_end199::
+JUMP             L_for_start192 _            _             ; loop back
+L_for_end193::
+JUMP             L_for_start190 _            _             ; loop back
+L_for_end191::
+BUILD_LIST       0            _            t1342       
+STORE            t1342        _            args          ; assign args
+LOAD_NAME        raw_args     _            t1343         ; load raw_args
+GET_ITER         t1343        _            t1344       
+L_for_start200::
+ITER_NEXT        t1344        _            t1345       
+BRANCH_IF_EXHAUST t1344        _            L_for_end201
+STORE            t1345        _            item          ; assign item
+LOAD_NAME        args         _            t1346         ; load args
+LOAD_ATTR        t1346        append       t1347         ; getattr append
+LOAD_NAME        item         _            t1348         ; load item
+LOAD_CONST       1            _            t1349         ; load 1
+SUBSCRIPT        t1348        t1349        t1350       
+ARG_PUSH         t1350        0            _           
+CALL             t1347        1            t1351       
+JUMP             L_for_start200 _            _             ; loop back
+L_for_end201::
+LOAD_NAME        frame        _            t1352         ; load frame
+LOAD_ATTR        t1352        set_local    t1353         ; getattr set_local
+LOAD_NAME        r            _            t1354         ; load r
+LOAD_NAME        func         _            t1355         ; load func
+LOAD_NAME        args         _            t1356         ; load args
+ARG_PUSH         t            0            _           
+ARG_PUSH         1            1            _           
+ARG_PUSH         3            2            _           
+ARG_PUSH         5            3            _           
+ARG_PUSH         6            4            _           
+CALL             t1355        5            t1357       
+ARG_PUSH         t1354        0            _           
+ARG_PUSH         t1357        1            _           
+CALL             t1353        2            t1358       
+JUMP             L_end187     _            _             ; skip else
+L_else186::
+LOAD_NAME        op           _            t1359         ; load op
+LOAD_CONST       'RETURN'     _            t1360         ; load string
+CMP_EQ           t1359        t1360        t1361       
+BRANCH_IF_FALSE  t1361        _            L_else202     ; if not test, go to else
+LOAD_CONST       'RETURN'     _            t1362         ; load string
+LOAD_NAME        V            _            t1363         ; load V
+LOAD_NAME        a1           _            t1364         ; load a1
+ARG_PUSH         t1364        0            _           
+CALL             t1363        1            t1365       
+TUPLE_APPEND     t1362        0            _           
+TUPLE_APPEND     t1365        1            _           
+BUILD_TUPLE      2            _            t1366       
+RETURN           t1366        _            _             ; return value
+JUMP             L_end203     _            _             ; skip else
+L_else202::
+LOAD_NAME        print        _            t1367         ; load print
+LOAD_CONST       '未知指令: '     _            t1368         ; load string
+LOAD_NAME        str          _            t1369         ; load str
+LOAD_NAME        op           _            t1370         ; load op
+ARG_PUSH         t1370        0            _           
+CALL             t1369        1            t1371       
+ADD              t1368        t1371        t1372       
+ARG_PUSH         t1372        0            _           
+CALL             t1367        1            t1373       
+LOAD_NAME        sys          _            t1374         ; load sys
+LOAD_ATTR        t1374        exit         t1375         ; getattr exit
+LOAD_CONST       1            _            t1376         ; load 1
+ARG_PUSH         t1376        0            _           
+CALL             t1375        1            t1377       
+L_end203::
+L_end187::
+L_end185::
+L_end181::
+L_end175::
+L_end173::
+L_end169::
+L_end165::
+L_end163::
+L_end161::
+L_end159::
+L_end157::
+L_end155::
+L_end153::
+L_end151::
+L_end149::
+L_end147::
+L_end145::
+L_end143::
+L_end141::
+L_end139::
+L_end137::
+L_end135::
+L_end133::
+L_end131::
+L_end121::
+L_end119::
+L_end115::
+L_end113::
+L_end111::
+L_end109::
+L_end107::
+L_end105::
+LOAD_CONST       None         _            t1378         ; load None
+RETURN           t1378        _            _             ; return value
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            _exec       
+CLASS_END        _            _            QD0VM       
+FUNCTION         _            _            main          ; function main
+ENTER_SCOPE      _            _            _           
+LOAD_NAME        len          _            t1379         ; load len
+LOAD_NAME        sys          _            t1380         ; load sys
+LOAD_ATTR        t1380        argv         t1381         ; getattr argv
+ARG_PUSH         t1381        0            _           
+CALL             t1379        1            t1382       
+LOAD_CONST       2            _            t1383         ; load 2
+CMP_LT           t1382        t1383        t1384       
+BRANCH_IF_FALSE  t1384        _            L_else204     ; if not test, go to else
+LOAD_NAME        print        _            t1385         ; load print
+LOAD_CONST       '用法: python qd0vm.py <file.qd>' _            t1386         ; load string
+ARG_PUSH         t1386        0            _           
+CALL             t1385        1            t1387       
+LOAD_NAME        sys          _            t1388         ; load sys
+LOAD_ATTR        t1388        exit         t1389         ; getattr exit
+LOAD_CONST       1            _            t1390         ; load 1
+ARG_PUSH         t1390        0            _           
+CALL             t1389        1            t1391       
+JUMP             L_end205     _            _             ; skip else
+L_else204::
+L_end205::
+LOAD_NAME        sys          _            t1392         ; load sys
+LOAD_ATTR        t1392        argv         t1393         ; getattr argv
+LOAD_CONST       1            _            t1394         ; load 1
+SUBSCRIPT        t1393        t1394        t1395       
+STORE            t1395        _            path          ; assign path
+TRY_BEGIN        L_except207  _            _           
+LOAD_NAME        load_program _            t1396         ; load load_program
+LOAD_NAME        path         _            t1397         ; load path
+ARG_PUSH         t1397        0            _           
+CALL             t1396        1            t1398       
+UNPACK_ITER      t1398        3            t1399       
+ITER_NEXT        t1399        0            t1400       
+STORE            t1400        _            instructions  ; assign instructions
+ITER_NEXT        t1399        1            t1401       
+STORE            t1401        _            label_map     ; assign label_map
+ITER_NEXT        t1399        2            t1402       
+STORE            t1402        _            function_map  ; assign function_map
+TRY_END          _            _            _           
+JUMP             L_end209     _            _             ; skip except
+L_except207::
+LOAD_NAME        FileNotFoundError _            t1403         ; load FileNotFoundError
+MATCH_EXC        t1403        _            _             ; check exception type
+LOAD_NAME        print        _            t1404         ; load print
+LOAD_CONST       '找不到檔案: '    _            t1405         ; load string
+LOAD_NAME        str          _            t1406         ; load str
+LOAD_NAME        path         _            t1407         ; load path
+ARG_PUSH         t1407        0            _           
+CALL             t1406        1            t1408       
+ADD              t1405        t1408        t1409       
+ARG_PUSH         t1409        0            _           
+CALL             t1404        1            t1410       
+LOAD_NAME        sys          _            t1411         ; load sys
+LOAD_ATTR        t1411        exit         t1412         ; getattr exit
+LOAD_CONST       1            _            t1413         ; load 1
+ARG_PUSH         t1413        0            _           
+CALL             t1412        1            t1414       
+L_end209::
+LOAD_NAME        QD0VM        _            t1415         ; load QD0VM
+LOAD_NAME        instructions _            t1416         ; load instructions
+LOAD_NAME        label_map    _            t1417         ; load label_map
+LOAD_NAME        function_map _            t1418         ; load function_map
+ARG_PUSH         t1416        0            _           
+ARG_PUSH         t1417        1            _           
+ARG_PUSH         t1418        2            _           
+CALL             t1415        3            t1419       
+STORE            t1419        _            vm            ; assign vm
+LOAD_NAME        vm           _            t1420         ; load vm
+LOAD_ATTR        t1420        run          t1421         ; getattr run
+CALL             t1421        0            t1422       
+EXIT_SCOPE       _            _            _           
+FUNCTION_END     _            _            main        
+LOAD_NAME        __name__     _            t1423         ; load __name__
+LOAD_CONST       '__main__'   _            t1424         ; load string
+CMP_EQ           t1423        t1424        t1425       
+BRANCH_IF_FALSE  t1425        _            L_else210     ; if not test, go to else
+LOAD_NAME        main         _            t1426         ; load main
+CALL             t1426        0            t1427       
+JUMP             L_end211     _            _             ; skip else
+L_else210::
+L_end211::
