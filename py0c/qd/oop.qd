@@ -1,0 +1,157 @@
+CLASS               BankAccount                             _               _                 ; class BankAccount
+FUNCTION            _                                       _               __init__          ; function __init__
+ENTER_SCOPE         _                                       _               _               
+PARAM               _                                       _               self            
+PARAM               _                                       _               owner           
+PARAM               _                                       _               balance         
+LOAD_NAME           owner                                   _               t0                ; load owner
+LOAD_NAME           self                                    _               t1                ; load self
+STORE_ATTR          t1                                      owner           t0              
+LOAD_NAME           balance                                 _               t2                ; load balance
+LOAD_NAME           self                                    _               t3                ; load self
+STORE_ATTR          t3                                      balance         t2              
+EXIT_SCOPE          _                                       _               _               
+FUNCTION_END        _                                       _               __init__        
+FUNCTION            _                                       _               deposit           ; function deposit
+ENTER_SCOPE         _                                       _               _               
+PARAM               _                                       _               self            
+PARAM               _                                       _               amount          
+LOAD_NAME           self                                    _               t4                ; load self
+LOAD_ATTR           t4                                      balance         t5                ; getattr balance
+LOAD_NAME           amount                                  _               t6                ; load amount
+ADD                 t5                                      t6              t7              
+LOAD_NAME           self                                    _               t8                ; load self
+STORE_ATTR          t8                                      balance         t7              
+LOAD_NAME           print                                   _               t9                ; load print
+FSTRING_START       _                                       _               t10               ; f-string start
+LOAD_NAME           self                                    _               t11               ; load self
+LOAD_ATTR           t11                                     owner           t12               ; getattr owner
+FSTRING_PART        t12                                     _               _                 ; expr: t12
+FSTRING_PART        ' 存入了 '                                 _               _                 ; literal:  存入了 
+LOAD_NAME           amount                                  _               t13               ; load amount
+FSTRING_PART        t13                                     _               _                 ; expr: t13
+FSTRING_PART        ' 元，目前餘額：'                              _               _                 ; literal:  元，目前餘額：
+LOAD_NAME           self                                    _               t14               ; load self
+LOAD_ATTR           t14                                     balance         t15               ; getattr balance
+FSTRING_PART        t15                                     _               _                 ; expr: t15
+FSTRING             _                                       _               t10               ; f-string end
+ARG_PUSH            t10                                     0               _               
+CALL                t9                                      1               t16             
+EXIT_SCOPE          _                                       _               _               
+FUNCTION_END        _                                       _               deposit         
+FUNCTION            _                                       _               withdraw          ; function withdraw
+ENTER_SCOPE         _                                       _               _               
+PARAM               _                                       _               self            
+PARAM               _                                       _               amount          
+LOAD_NAME           self                                    _               t17               ; load self
+LOAD_ATTR           t17                                     balance         t18               ; getattr balance
+LOAD_NAME           amount                                  _               t19               ; load amount
+CMP_GE              t18                                     t19             t20             
+BRANCH_IF_FALSE     t20                                     _               L_else0           ; if not test, go to else
+LOAD_NAME           self                                    _               t21               ; load self
+LOAD_ATTR           t21                                     balance         t22               ; getattr balance
+LOAD_NAME           amount                                  _               t23               ; load amount
+SUB                 t22                                     t23             t24             
+LOAD_NAME           self                                    _               t25               ; load self
+STORE_ATTR          t25                                     balance         t24             
+LOAD_NAME           print                                   _               t26               ; load print
+FSTRING_START       _                                       _               t27               ; f-string start
+LOAD_NAME           self                                    _               t28               ; load self
+LOAD_ATTR           t28                                     owner           t29               ; getattr owner
+FSTRING_PART        t29                                     _               _                 ; expr: t29
+FSTRING_PART        ' 提出了 '                                 _               _                 ; literal:  提出了 
+LOAD_NAME           amount                                  _               t30               ; load amount
+FSTRING_PART        t30                                     _               _                 ; expr: t30
+FSTRING_PART        ' 元，目前餘額：'                              _               _                 ; literal:  元，目前餘額：
+LOAD_NAME           self                                    _               t31               ; load self
+LOAD_ATTR           t31                                     balance         t32               ; getattr balance
+FSTRING_PART        t32                                     _               _                 ; expr: t32
+FSTRING             _                                       _               t27               ; f-string end
+ARG_PUSH            t27                                     0               _               
+CALL                t26                                     1               t33             
+JUMP                L_end1                                  _               _                 ; skip else
+L_else0::
+LOAD_NAME           print                                   _               t34               ; load print
+FSTRING_START       _                                       _               t35               ; f-string start
+LOAD_NAME           self                                    _               t36               ; load self
+LOAD_ATTR           t36                                     owner           t37               ; getattr owner
+FSTRING_PART        t37                                     _               _                 ; expr: t37
+FSTRING_PART        ' 餘額不足！欲提款 '                            _               _                 ; literal:  餘額不足！欲提款 
+LOAD_NAME           amount                                  _               t38               ; load amount
+FSTRING_PART        t38                                     _               _                 ; expr: t38
+FSTRING_PART        ' 元，但只有 '                               _               _                 ; literal:  元，但只有 
+LOAD_NAME           self                                    _               t39               ; load self
+LOAD_ATTR           t39                                     balance         t40               ; getattr balance
+FSTRING_PART        t40                                     _               _                 ; expr: t40
+FSTRING_PART        ' 元。'                                   _               _                 ; literal:  元。
+FSTRING             _                                       _               t35               ; f-string end
+ARG_PUSH            t35                                     0               _               
+CALL                t34                                     1               t41             
+L_end1::
+EXIT_SCOPE          _                                       _               _               
+FUNCTION_END        _                                       _               withdraw        
+CLASS_END           _                                       _               BankAccount     
+LOAD_NAME           BankAccount                             _               t42               ; load BankAccount
+LOAD_CONST          "小明"                                    _               t43               ; load string
+LOAD_CONST          1000                                    _               t44               ; load 1000
+ARG_PUSH            t43                                     0               _               
+ARG_PUSH            t44                                     1               _               
+CALL                t42                                     2               t45             
+STORE               t45                                     _               account1          ; assign account1
+LOAD_NAME           BankAccount                             _               t46               ; load BankAccount
+LOAD_CONST          "小華"                                    _               t47               ; load string
+LOAD_CONST          500                                     _               t48               ; load 500
+ARG_PUSH            t47                                     0               _               
+ARG_PUSH            t48                                     1               _               
+CALL                t46                                     2               t49             
+STORE               t49                                     _               account2          ; assign account2
+LOAD_NAME           account1                                _               t50               ; load account1
+LOAD_ATTR           t50                                     deposit         t51               ; getattr deposit
+LOAD_CONST          500                                     _               t52               ; load 500
+ARG_PUSH            t52                                     0               _               
+CALL                t51                                     1               t53             
+LOAD_NAME           account1                                _               t54               ; load account1
+LOAD_ATTR           t54                                     withdraw        t55               ; getattr withdraw
+LOAD_CONST          200                                     _               t56               ; load 200
+ARG_PUSH            t56                                     0               _               
+CALL                t55                                     1               t57             
+LOAD_NAME           account1                                _               t58               ; load account1
+LOAD_ATTR           t58                                     withdraw        t59               ; getattr withdraw
+LOAD_CONST          2000                                    _               t60               ; load 2000
+ARG_PUSH            t60                                     0               _               
+CALL                t59                                     1               t61             
+LOAD_NAME           print                                   _               t62               ; load print
+LOAD_CONST          "---"                                   _               t63               ; load string
+ARG_PUSH            t63                                     0               _               
+CALL                t62                                     1               t64             
+LOAD_NAME           account2                                _               t65               ; load account2
+LOAD_ATTR           t65                                     deposit         t66               ; getattr deposit
+LOAD_CONST          100                                     _               t67               ; load 100
+ARG_PUSH            t67                                     0               _               
+CALL                t66                                     1               t68             
+LOAD_NAME           account2                                _               t69               ; load account2
+LOAD_ATTR           t69                                     withdraw        t70               ; getattr withdraw
+LOAD_CONST          600                                     _               t71               ; load 600
+ARG_PUSH            t71                                     0               _               
+CALL                t70                                     1               t72             
+LOAD_NAME           print                                   _               t73               ; load print
+FSTRING_START       _                                       _               t74               ; f-string start
+FSTRING_PART        '最終狀態 - '                               _               _                 ; literal: 最終狀態 - 
+LOAD_NAME           account1                                _               t75               ; load account1
+LOAD_ATTR           t75                                     owner           t76               ; getattr owner
+FSTRING_PART        t76                                     _               _                 ; expr: t76
+FSTRING_PART        ': '                                    _               _                 ; literal: : 
+LOAD_NAME           account1                                _               t77               ; load account1
+LOAD_ATTR           t77                                     balance         t78               ; getattr balance
+FSTRING_PART        t78                                     _               _                 ; expr: t78
+FSTRING_PART        ', '                                    _               _                 ; literal: , 
+LOAD_NAME           account2                                _               t79               ; load account2
+LOAD_ATTR           t79                                     owner           t80               ; getattr owner
+FSTRING_PART        t80                                     _               _                 ; expr: t80
+FSTRING_PART        ': '                                    _               _                 ; literal: : 
+LOAD_NAME           account2                                _               t81               ; load account2
+LOAD_ATTR           t81                                     balance         t82               ; getattr balance
+FSTRING_PART        t82                                     _               _                 ; expr: t82
+FSTRING             _                                       _               t74               ; f-string end
+ARG_PUSH            t74                                     0               _               
+CALL                t73                                     1               t83             

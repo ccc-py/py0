@@ -10,6 +10,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ast
+import operator
 
 class QuadEmitter:
     def __init__(self):
@@ -31,12 +32,10 @@ class QuadEmitter:
     def emit(self, op, arg1="_", arg2="_", result="_", comment=""):
         if comment:
             comment = f"  ; {comment}"
-        # 【修正 1】: 在每個欄位之間強制加入空白，防止字元黏合
-        self.output.append(f"{str(op):<16} {str(arg1):<12} {str(arg2):<12} {str(result):<12}{comment}")
+        self.output.append(f"{op:20}{arg1:40}{arg2:16}{result:16}{comment}")
     
     def emit_label(self, label):
-        # 【修正 2】: 標籤一致使用 :: 作為結尾
-        self.output.append(f"{label}::")
+        self.output.append(f"{label}:")
     
     def emit_blank(self):
         self.output.append("")
@@ -49,6 +48,7 @@ class Compiler:
         self.functions = {}
         self.classes = {}
         self.current_scope = None
+        self.loop_stack = []  # stack of (break_label, continue_label)
     
     def compile(self, source, filename="<input>"):
         tree = ast.parse(source, filename=filename)
@@ -101,10 +101,16 @@ class Compiler:
                 self.emitter.emit("RETURN", "_", "_", "_", "return None")
         
         elif t is ast.Break:
-            self.emitter.emit("BREAK", "_", "_", "_")
+            if self.loop_stack:
+                self.emitter.emit("BREAK", "_", "_", self.loop_stack[-1][0])
+            else:
+                self.emitter.emit("BREAK", "_", "_", "_")
         
         elif t is ast.Continue:
-            self.emitter.emit("CONTINUE", "_", "_", "_")
+            if self.loop_stack:
+                self.emitter.emit("CONTINUE", "_", "_", self.loop_stack[-1][1])
+            else:
+                self.emitter.emit("CONTINUE", "_", "_", "_")
         
         elif t is ast.Pass:
             self.emitter.emit("PASS", "_", "_", "_")
@@ -224,22 +230,27 @@ class Compiler:
             self.emitter.emit("#", "_", "_", dest, f"Expr: {t.__name__}")
             return dest
     
+    def _str_literal(self, val):
+        """雙引號包字串，避免 \' 在 qd 格式中無法 tokenize。"""
+        s = val.replace('\\', '\\\\').replace('"', '\\"')
+        s = s.replace('\n', '\\n').replace('\t', '\\t').replace('\r', '\\r')
+        return '"' + s + '"'
+
     def _compile_constant(self, node):
         val = node.value
         dest = self.emitter.new_temp()
         if val is None:
-            self.emitter.emit("LOAD_CONST", "None", "_", dest, "load None")
+            self.emitter.emit("LOAD_CONST", "None", "_", dest, f"load None")
         elif val is True:
-            self.emitter.emit("LOAD_CONST", "True", "_", dest, "load True")
+            self.emitter.emit("LOAD_CONST", "True", "_", dest, f"load True")
         elif val is False:
-            self.emitter.emit("LOAD_CONST", "False", "_", dest, "load False")
+            self.emitter.emit("LOAD_CONST", "False", "_", dest, f"load False")
         elif isinstance(val, (int, float)):
             self.emitter.emit("LOAD_CONST", str(val), "_", dest, f"load {val}")
         elif isinstance(val, str):
-            # 使用 repr() 保證像是 \n 換行符號會被正確編碼為單行輸出
-            self.emitter.emit("LOAD_CONST", repr(val), "_", dest, "load string")
+            self.emitter.emit("LOAD_CONST", self._str_literal(val), "_", dest, f"load string")
         else:
-            self.emitter.emit("LOAD_CONST", repr(val), "_", dest, "load constant")
+            self.emitter.emit("LOAD_CONST", self._str_literal(str(val)), "_", dest, f"load constant")
         return dest
     
     def _compile_name(self, node):
@@ -263,20 +274,34 @@ class Compiler:
     
     def _binop_op(self, op):
         op_type = type(op)
-        if op_type is ast.Add: return "ADD"
-        elif op_type is ast.Sub: return "SUB"
-        elif op_type is ast.Mult: return "MUL"
-        elif op_type is ast.Div: return "DIV"
-        elif op_type is ast.FloorDiv: return "FLOOR_DIV"
-        elif op_type is ast.Mod: return "MOD"
-        elif op_type is ast.Pow: return "POW"
-        elif op_type is ast.BitAnd: return "BIT_AND"
-        elif op_type is ast.BitOr: return "BIT_OR"
-        elif op_type is ast.BitXor: return "BIT_XOR"
-        elif op_type is ast.LShift: return "LSHIFT"
-        elif op_type is ast.RShift: return "RSHIFT"
-        elif op_type is ast.MatMult: return "MATMUL"
-        else: return "BINOP"
+        if op_type is ast.Add:
+            return "ADD"
+        elif op_type is ast.Sub:
+            return "SUB"
+        elif op_type is ast.Mult:
+            return "MUL"
+        elif op_type is ast.Div:
+            return "DIV"
+        elif op_type is ast.FloorDiv:
+            return "FLOOR_DIV"
+        elif op_type is ast.Mod:
+            return "MOD"
+        elif op_type is ast.Pow:
+            return "POW"
+        elif op_type is ast.BitAnd:
+            return "BIT_AND"
+        elif op_type is ast.BitOr:
+            return "BIT_OR"
+        elif op_type is ast.BitXor:
+            return "BIT_XOR"
+        elif op_type is ast.LShift:
+            return "LSHIFT"
+        elif op_type is ast.RShift:
+            return "RSHIFT"
+        elif op_type is ast.MatMult:
+            return "MATMUL"
+        else:
+            return "BINOP"
     
     def _compile_unaryop(self, node):
         operand = self.compile_expr(node.operand)
@@ -329,17 +354,28 @@ class Compiler:
     
     def _cmp_op(self, op):
         op_type = type(op)
-        if op_type is ast.Eq: return "CMP_EQ"
-        elif op_type is ast.NotEq: return "CMP_NE"
-        elif op_type is ast.Lt: return "CMP_LT"
-        elif op_type is ast.LtE: return "CMP_LE"
-        elif op_type is ast.Gt: return "CMP_GT"
-        elif op_type is ast.GtE: return "CMP_GE"
-        elif op_type is ast.Is: return "CMP_IS"
-        elif op_type is ast.IsNot: return "CMP_IS_NOT"
-        elif op_type is ast.In: return "CMP_IN"
-        elif op_type is ast.NotIn: return "CMP_NOT_IN"
-        else: return "CMP"
+        if op_type is ast.Eq:
+            return "CMP_EQ"
+        elif op_type is ast.NotEq:
+            return "CMP_NE"
+        elif op_type is ast.Lt:
+            return "CMP_LT"
+        elif op_type is ast.LtE:
+            return "CMP_LE"
+        elif op_type is ast.Gt:
+            return "CMP_GT"
+        elif op_type is ast.GtE:
+            return "CMP_GE"
+        elif op_type is ast.Is:
+            return "CMP_IS"
+        elif op_type is ast.IsNot:
+            return "CMP_IS_NOT"
+        elif op_type is ast.In:
+            return "CMP_IN"
+        elif op_type is ast.NotIn:
+            return "CMP_NOT_IN"
+        else:
+            return "CMP"
     
     def _compile_call(self, node):
         func = self.compile_expr(node.func)
@@ -364,7 +400,7 @@ class Compiler:
         body = self.compile_expr(node.body)
         orelse = self.compile_expr(node.orelse)
         dest = self.emitter.new_temp()
-        self.emitter.emit("TERNARY", test, body, dest, "test ? body : orelse")
+        self.emitter.emit("TERNARY", test, body, dest, f"test ? body : orelse")
         return dest
     
     def _compile_lambda(self, node):
@@ -436,12 +472,18 @@ class Compiler:
     
     def _compile_slice(self, node):
         parts = []
-        if node.lower: parts.append(self.compile_expr(node.lower))
-        else: parts.append("_")
-        if node.upper: parts.append(self.compile_expr(node.upper))
-        else: parts.append("_")
-        if node.step: parts.append(self.compile_expr(node.step))
-        else: parts.append("_")
+        if node.lower:
+            parts.append(self.compile_expr(node.lower))
+        else:
+            parts.append("_")
+        if node.upper:
+            parts.append(self.compile_expr(node.upper))
+        else:
+            parts.append("_")
+        if node.step:
+            parts.append(self.compile_expr(node.step))
+        else:
+            parts.append("_")
         return ":".join(parts)
     
     def _compile_listcomp(self, node):
@@ -465,54 +507,16 @@ class Compiler:
         return dest
     
     def _compile_fstring(self, node):
-        """
-        【修正 3】: 展開 F-String
-        把 f"Hello {name:.2f}" 編譯為：
-        t1 = "Hello "
-        t2 = format(name, ".2f")
-        t3 = ADD t1 t2
-        """
-        if not node.values:
-            dest = self.emitter.new_temp()
-            self.emitter.emit("LOAD_CONST", "''", "_", dest)
-            return dest
-            
-        parts = []
+        dest = self.emitter.new_temp()
+        self.emitter.emit("FSTRING_START", "_", "_", dest, "f-string start")
         for v in node.values:
             if isinstance(v, ast.Constant):
-                t = self.emitter.new_temp()
-                self.emitter.emit("LOAD_CONST", repr(v.value), "_", t, "f-string static part")
-                parts.append(t)
+                self.emitter.emit("FSTRING_PART", repr(v.value), "_", "_", f"literal: {v.value}")
             elif isinstance(v, ast.FormattedValue):
-                val_t = self.compile_expr(v.value)
-                
-                # 若包含格式化參數 (例如 :.2f)
-                if v.format_spec:
-                    spec_t = self.compile_expr(v.format_spec)
-                    fmt_func = self.emitter.new_temp()
-                    self.emitter.emit("LOAD_NAME", "format", "_", fmt_func, "load built-in format")
-                    self.emitter.emit("ARG_PUSH", val_t, "0", "_")
-                    self.emitter.emit("ARG_PUSH", spec_t, "1", "_")
-                    str_val = self.emitter.new_temp()
-                    self.emitter.emit("CALL", fmt_func, "2", str_val, "format string")
-                    parts.append(str_val)
-                else:
-                    # 預設轉換使用 str()
-                    str_func = self.emitter.new_temp()
-                    self.emitter.emit("LOAD_NAME", "str", "_", str_func, "load built-in str")
-                    self.emitter.emit("ARG_PUSH", val_t, "0", "_")
-                    str_val = self.emitter.new_temp()
-                    self.emitter.emit("CALL", str_func, "1", str_val, "cast to string")
-                    parts.append(str_val)
-        
-        # 利用 ADD 串接所有的 parts
-        result = parts[0]
-        for i in range(1, len(parts)):
-            new_result = self.emitter.new_temp()
-            self.emitter.emit("ADD", result, parts[i], new_result, "f-string concat")
-            result = new_result
-            
-        return result
+                val = self.compile_expr(v.value)
+                self.emitter.emit("FSTRING_PART", val, "_", "_", f"expr: {val}")
+        self.emitter.emit("FSTRING", "_", "_", dest, "f-string end")
+        return dest
     
     def _compile_named_expr(self, node):
         val = self.compile_expr(node.value)
@@ -555,21 +559,23 @@ class Compiler:
         for s in node.body:
             self.compile_stmt(s, local_vars=local_vars)
         self.emitter.emit("JUMP", end_label, "_", "_", "skip else")
-        self.emitter.emit_label(else_label)
+        self.emitter.emit_label(else_label + ":")
         for s in node.orelse:
             self.compile_stmt(s, local_vars=local_vars)
-        self.emitter.emit_label(end_label)
+        self.emitter.emit_label(end_label + ":")
     
     def compile_while(self, node, local_vars):
         loop_start = self.emitter.new_label("L_while_start")
         loop_end = self.emitter.new_label("L_while_end")
-        self.emitter.emit_label(loop_start)
+        self.emitter.emit_label(loop_start + ":")
         test = self.compile_expr(node.test)
         self.emitter.emit("BRANCH_IF_FALSE", test, "_", loop_end, "while test false")
+        self.loop_stack.append((loop_end, loop_start))
         for s in node.body:
             self.compile_stmt(s, local_vars=local_vars)
+        self.loop_stack.pop()
         self.emitter.emit("JUMP", loop_start, "_", "_", "loop back")
-        self.emitter.emit_label(loop_end)
+        self.emitter.emit_label(loop_end + ":")
     
     def compile_for(self, node, local_vars):
         iter_temp = self.compile_expr(node.iter)
@@ -577,15 +583,17 @@ class Compiler:
         self.emitter.emit("GET_ITER", iter_temp, "_", iter_var)
         loop_start = self.emitter.new_label("L_for_start")
         loop_end = self.emitter.new_label("L_for_end")
-        self.emitter.emit_label(loop_start)
+        self.emitter.emit_label(loop_start + ":")
         item = self.emitter.new_temp()
         self.emitter.emit("ITER_NEXT", iter_var, "_", item)
         self.emitter.emit("BRANCH_IF_EXHAUST", iter_var, "_", loop_end)
         self.compile_assign(node.target, item, local_vars)
+        self.loop_stack.append((loop_end, loop_start))
         for s in node.body:
             self.compile_stmt(s, local_vars=local_vars)
+        self.loop_stack.pop()
         self.emitter.emit("JUMP", loop_start, "_", "_", "loop back")
-        self.emitter.emit_label(loop_end)
+        self.emitter.emit_label(loop_end + ":")
     
     def compile_function_def(self, node, local_vars):
         func_name = node.name
@@ -620,6 +628,11 @@ class Compiler:
     def compile_import(self, node):
         for alias in node.names:
             self.emitter.emit("IMPORT", alias.name, "_", "_", f"import {alias.name}")
+            if alias.asname and alias.asname != alias.name:
+                # import X as Y → 把 X 的值存到 Y
+                t = self.emitter.new_temp()
+                self.emitter.emit("LOAD_NAME", alias.name, "_", t)
+                self.emitter.emit("STORE", t, "_", alias.asname, f"alias {alias.asname}")
     
     def compile_import_from(self, node):
         for alias in node.names:
@@ -638,18 +651,22 @@ class Compiler:
             self.compile_stmt(stmt, local_vars=local_vars)
         self.emitter.emit("TRY_END", "_", "_", "_")
         self.emitter.emit("JUMP", end_label, "_", "_", "skip except")
-        self.emitter.emit_label(except_label)
+        self.emitter.emit_label(except_label + ":")
         for handler in node.handlers:
+            next_handler_label = self.emitter.new_label("L_next_handler")
             if handler.type:
                 exc_type = self.compile_expr(handler.type)
-                self.emitter.emit("MATCH_EXC", exc_type, "_", "_", "check exception type")
+                match_dest = self.emitter.new_temp()
+                self.emitter.emit("MATCH_EXC", exc_type, "_", match_dest, "check exception type")
+                self.emitter.emit("BRANCH_IF_FALSE", match_dest, "_", next_handler_label, "no match, try next")
             if handler.name:
                 self.emitter.emit("EXCEPT_VAR", "_", "_", handler.name)
             for stmt in handler.body:
                 self.compile_stmt(stmt, local_vars=local_vars)
-        self.emitter.emit_label(end_label)
+            self.emitter.emit_label(next_handler_label + ":")
+        self.emitter.emit_label(end_label + ":")
         if node.finalbody:
-            self.emitter.emit_label(finally_label)
+            self.emitter.emit_label(finally_label + ":")
             for stmt in node.finalbody:
                 self.compile_stmt(stmt, local_vars=local_vars)
     
