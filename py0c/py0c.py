@@ -127,6 +127,10 @@ class Compiler:
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     self.emitter.emit("DELETE_NAME", target.id, "_", "_")
+                elif isinstance(target, ast.Subscript):
+                    obj = self.compile_expr(target.value)
+                    key = self._compile_subscript_key(target.slice)
+                    self.emitter.emit("SUBSCRIPT_DEL", obj, key, "_")
         
         elif t is ast.Import:
             self.compile_import(node)
@@ -385,12 +389,19 @@ class Compiler:
                 args.extend(self.compile_expr(a.value))
             else:
                 args.append(self.compile_expr(a))
+        kwarg_list = []
         for kw in node.keywords:
             if kw.arg is None:
-                args.extend(self.compile_expr(kw.value))
+                pass  # **kwargs spread: not yet supported
+            else:
+                kval = self.compile_expr(kw.value)
+                kwarg_list.append((kw.arg, kval))
         for i, arg in enumerate(args):
             self.emitter.emit("ARG_PUSH", arg, str(i), "_")
+        for kname, kval in kwarg_list:
+            self.emitter.emit("KWARG_PUSH", kval, kname, "_")
         argc = len(args)
+        kwargc = len(kwarg_list)
         dest = self.emitter.new_temp()
         self.emitter.emit("CALL", func, str(argc), dest)
         return dest
@@ -507,16 +518,53 @@ class Compiler:
         return dest
     
     def _compile_fstring(self, node):
-        dest = self.emitter.new_temp()
-        self.emitter.emit("FSTRING_START", "_", "_", dest, "f-string start")
+        """把 f-string 編譯成字串加法鏈。"""
+        part_temps = []
         for v in node.values:
             if isinstance(v, ast.Constant):
-                self.emitter.emit("FSTRING_PART", repr(v.value), "_", "_", f"literal: {v.value}")
+                # 字串字面量部分
+                t = self.emitter.new_temp()
+                self.emitter.emit("LOAD_CONST", self._str_literal(str(v.value)), "_", t)
+                part_temps.append(t)
             elif isinstance(v, ast.FormattedValue):
-                val = self.compile_expr(v.value)
-                self.emitter.emit("FSTRING_PART", val, "_", "_", f"expr: {val}")
-        self.emitter.emit("FSTRING", "_", "_", dest, "f-string end")
-        return dest
+                val_t = self.compile_expr(v.value)
+                # 處理 format spec（如 :.2f）
+                if v.format_spec is not None:
+                    # format_spec 本身也是 JoinedStr
+                    spec_parts = []
+                    for sv in v.format_spec.values:
+                        if isinstance(sv, ast.Constant):
+                            spec_parts.append(str(sv.value))
+                    spec_str = "".join(spec_parts)
+                    fmt_t = self.emitter.new_temp()
+                    spec_lit = self._str_literal(spec_str)
+                    spec_temp = self.emitter.new_temp()
+                    self.emitter.emit("LOAD_CONST", spec_lit, "_", spec_temp)
+                    fmt_fn = self.emitter.new_temp()
+                    self.emitter.emit("LOAD_NAME", "format", "_", fmt_fn)
+                    self.emitter.emit("ARG_PUSH", val_t, "0", "_")
+                    self.emitter.emit("ARG_PUSH", spec_temp, "1", "_")
+                    self.emitter.emit("CALL", fmt_fn, "2", fmt_t)
+                    part_temps.append(fmt_t)
+                else:
+                    # 轉成字串
+                    str_fn = self.emitter.new_temp()
+                    str_t  = self.emitter.new_temp()
+                    self.emitter.emit("LOAD_NAME", "str", "_", str_fn)
+                    self.emitter.emit("ARG_PUSH", val_t, "0", "_")
+                    self.emitter.emit("CALL", str_fn, "1", str_t)
+                    part_temps.append(str_t)
+        if not part_temps:
+            dest = self.emitter.new_temp()
+            self.emitter.emit("LOAD_CONST", '""', "_", dest)
+            return dest
+        # 用 ADD 把所有部分串起來
+        result = part_temps[0]
+        for pt in part_temps[1:]:
+            new_t = self.emitter.new_temp()
+            self.emitter.emit("ADD", result, pt, new_t)
+            result = new_t
+        return result
     
     def _compile_named_expr(self, node):
         val = self.compile_expr(node.value)
@@ -600,9 +648,30 @@ class Compiler:
         self.emitter.emit("FUNCTION", "_", "_", func_name, f"function {func_name}")
         self.emitter.emit("ENTER_SCOPE", "_", "_", "_")
         func_vars = set()
-        for arg in node.args.args:
+        args_list = node.args.args
+        defaults = node.args.defaults  # right-aligned defaults
+        n_args = len(args_list)
+        n_defaults = len(defaults)
+        for i, arg in enumerate(args_list):
             self.emitter.emit("PARAM", "_", "_", arg.arg)
             func_vars.add(arg.arg)
+            # 有預設值：if param is None: param = default
+            default_idx = i - (n_args - n_defaults)
+            if default_idx >= 0:
+                default_val = self.compile_expr(defaults[default_idx])
+                param_temp = self.emitter.new_temp()
+                self.emitter.emit("LOAD_NAME", arg.arg, "_", param_temp)
+                end_label = self.emitter.new_label("L_default_end")
+                # if param is NOT None: skip default assignment
+                none_temp = self.emitter.new_temp()
+                self.emitter.emit("LOAD_CONST", "None", "_", none_temp)
+                cmp_temp = self.emitter.new_temp()
+                self.emitter.emit("CMP_IS_NOT", param_temp, none_temp, cmp_temp)
+                self.emitter.emit("BRANCH_IF_TRUE", cmp_temp, "_", end_label,
+                                  f"skip default for {arg.arg}")
+                self.emitter.emit("STORE", default_val, "_", arg.arg,
+                                  f"default {arg.arg}")
+                self.emitter.emit_label(end_label + ":")
         if node.args.vararg:
             self.emitter.emit("VARARG", "_", "_", node.args.vararg.arg)
             func_vars.add(node.args.vararg.arg)

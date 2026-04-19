@@ -13,6 +13,7 @@ LOAD_CONST          1                                       _               t7  
 RETURN              t7                                      _               _                 ; return value
 JUMP                L_end1                                  _               _                 ; skip else
 L_else0::
+L_end1::
 LOAD_NAME           n                                       _               t8                ; load n
 LOAD_NAME           factorial                               _               t9                ; load factorial
 LOAD_NAME           n                                       _               t10               ; load n
@@ -22,7 +23,6 @@ ARG_PUSH            t12                                     0               _
 CALL                t9                                      1               t13             
 MUL                 t8                                      t13             t14             
 RETURN              t14                                     _               _                 ; return value
-L_end1::
 EXIT_SCOPE          _                                       _               _               
 FUNCTION_END        _                                       _               factorial       
 LOAD_NAME           factorial                               _               t15               ; load factorial

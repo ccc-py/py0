@@ -177,6 +177,7 @@ class Frame:
         self.locs = {}
         self.pc = 0
         self.arg_buf = []
+        self.kwarg_buf = {}
         self.list_buf = []
         self.tuple_buf = []
         self.set_buf = []
@@ -194,6 +195,21 @@ class Frame:
             return self.locs[token]
         if token in self.globs:
             return self.globs[token]
+        val = parse_value(token)
+        if type(val) is str and val == token:
+            raise NameError('未定義: ' + token)
+        return val
+
+    def resolve_global_first(self, token):
+        """頂層 frame 優先查 globs（global 變數）"""
+        if not isinstance(token, str):
+            return token
+        if token == '_':
+            return None
+        if token in self.globs:
+            return self.globs[token]
+        if token in self.locs:
+            return self.locs[token]
         val = parse_value(token)
         if type(val) is str and val == token:
             raise NameError('未定義: ' + token)
@@ -332,12 +348,12 @@ class QD0VM:
 
     def _make_fn(self, fname, start_idx, end_idx, captured_env=None):
         vm = self
-        def qd_fn(*args):
-            return vm._call_fn(fname, start_idx, end_idx, args, captured_env)
+        def qd_fn(*args, **kwargs):
+            return vm._call_fn(fname, start_idx, end_idx, args, captured_env, kwargs)
         qd_fn.__name__ = fname
         return qd_fn
 
-    def _call_fn(self, fname, start_idx, end_idx, args, captured_env=None):
+    def _call_fn(self, fname, start_idx, end_idx, args, captured_env=None, kwargs=None):
         frame = Frame(fname, self.instructions, self.label_map, self.globs)
         if captured_env:
             for k, v in captured_env.items():
@@ -368,6 +384,10 @@ class QD0VM:
                 pc = pc + 1
                 continue
             break
+        # 把 kwargs 寫入 locs（keyword arguments）
+        if kwargs:
+            for k, v in kwargs.items():
+                frame.locs[k] = v
         frame.pc = pc
         # 計算 inner_skip（跳過 nested function/class body，保留 FUNCTION 指令本身）
         inner_skip = set()
@@ -481,7 +501,9 @@ class QD0VM:
             fname2 = r
             if fname2 in self.function_map:
                 se = self.function_map[fname2]
-                fn = self._make_fn(fname2, se[0], se[1], dict(locs))
+                # 只捕捉 locs 中不在 globs 的變數（真正的 closure 變數）
+                captured = {k: v for k, v in locs.items() if k not in globs}
+                fn = self._make_fn(fname2, se[0], se[1], captured if captured else None)
                 locs[fname2] = fn
                 globs[fname2] = fn
             return None
@@ -490,13 +512,18 @@ class QD0VM:
         elif op == 'LOAD_CONST':
             setv(r, lit(a1))
         elif op == 'LOAD_NAME':
-            setv(r, resolve(a1))
+            if frame.name == '__main__':
+                setv(r, frame.resolve_global_first(a1))
+            else:
+                setv(r, resolve(a1))
         elif op == 'LOAD_ATTR':
             setv(r, getattr(V(a1), a2))
         elif op == 'STORE':
             val = V(a1)
+            # 先判斷是否需要寫全域（在 setv 之前，locs 還沒有 r）
+            write_global = frame.name == '__main__' or (r in globs and r not in locs)
             setv(r, val)
-            if frame.name == '__main__':
+            if write_global:
                 globs[r] = val
         elif op == 'STORE_ATTR':
             setattr(V(a1), a2, V(r))
@@ -647,10 +674,15 @@ class QD0VM:
             setv(r, V(a1)[self._key(a2, frame)])
         elif op == 'SUBSCRIPT_SET':
             V(a1)[self._key(a2, frame)] = V(r)
+        elif op == 'SUBSCRIPT_DEL':
+            del V(a1)[self._key(a2, frame)]
 
         # ── Function / Call ──────────────────────────────────────────────────
         elif op == 'ARG_PUSH':
             frame.arg_buf.append((lit(a2), V(a1)))
+        elif op == 'KWARG_PUSH':
+            # a1=value_temp, a2=key_name
+            frame.kwarg_buf[a2] = V(a1)
         elif op == 'CALL':
             func = V(a1)
             if a2 and a2 != '_':
@@ -663,7 +695,12 @@ class QD0VM:
             args = []
             for x in raw:
                 args.append(x[1])
-            setv(r, func(*args))
+            if frame.kwarg_buf:
+                kwargs = dict(frame.kwarg_buf)
+                frame.kwarg_buf = {}
+                setv(r, func(*args, **kwargs))
+            else:
+                setv(r, func(*args))
         elif op == 'RETURN':
             return ('R', V(a1))
         elif op == 'MAKE_CLOSURE':
@@ -740,22 +777,6 @@ class QD0VM:
                 setv(r, V(a2))
             else:
                 setv(r, None)
-
-        # ── FString ─────────────────────────────────────────────────────────
-        elif op == 'FSTRING_START':
-            frame.fstring_buf = []
-        elif op == 'FSTRING_PART':
-            part = a1
-            if part == '_' or not part:
-                pass
-            elif (part.startswith("'") and part.endswith("'")) or (part.startswith('"') and part.endswith('"')):
-                frame.fstring_buf.append(part[1:-1])
-            else:
-                frame.fstring_buf.append(str(V(part)))
-        elif op == 'FSTRING':
-            result = ''.join(frame.fstring_buf)
-            setv(r, result)
-            del frame.fstring_buf
 
         # ── Type specialization ──────────────────────────────────────────────
         elif op in ('ASSUME_TYPE', 'BOX', 'UNBOX'):
