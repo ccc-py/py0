@@ -6,14 +6,14 @@ Python 直譯器與編譯器實驗專案
 
 | 元件 | 描述 |
 |------|------|
-| **py0i** | Python 直譯器 (使用 Python stdlib `ast`，自己實作執行引擎) |
+| **py_full** | Python 直譯器 (使用 Python stdlib `ast`，自己實作執行引擎) |
 | **py0c** | Python → QD IR 編譯器 + QD 虛擬機 (Python + C 兩種實作) |
 
 ## 快速開始
 
-### py0i 直譯器
+### py_full 直譯器
 ```bash
-python py0i/py0i.py <script.py> [args...]
+python py_full/py0i.py <script.py> [args...]
 ```
 
 ### py0c 編譯器
@@ -38,16 +38,16 @@ bash py0c/ctest.sh    # C VM 測試
 ## 文件
 
 - `_doc/qd0spec.md` - QD 四元組 IR 規格
-- `_doc/BNF.md` - py0i 支援的 Python 語法
-- `py0i/README.md` - py0i 架構說明
+- `_doc/BNF.md` - py_full 支援的 Python 語法
+- `py_full/README.md` - py_full 架構說明
 - `py0c/README.md` - py0c 架構說明
 
 ## 測試檔案
 
-- `py0i/py/hello.py`, `py/fact.py` - py0i 測試
+- `tests/hello.py`, `tests/fact.py` - 共享測試
 - `py0c/py/hello.py`, `py/fact.py`, `py/json.py` - py0c 編譯測試
 
-## py0i 語言特色
+## py_full 語言特色
 
 - 類別與繼承
 - 閉包與裝飾器

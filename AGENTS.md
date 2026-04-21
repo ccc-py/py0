@@ -2,10 +2,10 @@
 
 ## Commands
 
-### py0i (Python interpreter)
+### py_full (Python interpreter)
 ```bash
 cd /Users/Shared/ccc/project/py0
-python py0i/py0i.py <script.py> [args...]
+python py_full/py0i.py <script.py> [args...]
 ```
 
 ### py0c (Python → QD compiler)
@@ -25,7 +25,7 @@ bash ctest.sh    # C VM tests
 
 ## Structure
 
-- `py0i/` - Python interpreter using Python stdlib `ast` module
+- `py_full/` - Python interpreter using Python stdlib `ast` module
 - `py0c/` - Python → QD IR compiler + QD VM (Python + C implementations)
 - `_doc/qd0spec.md` - QD quadruple IR specification
 - `py0c/py/` - test scripts (hello.py, fact.py, json.py, class.py, oop.py)
@@ -56,6 +56,6 @@ qd0vm.py - compiler self-hosting (fails - documented)
 
 ## Entry points
 
-- py0i: `main()` at py0i/py0i.py:992, `sys.argv[1]` = script path
+- py_full: `main()` at py_full/py0i.py:992, `sys.argv[1]` = script path
 - py0c: `main()` at py0c/py0c.py:761, accepts `-o output.qd` flag
 - qd0vm (Python): `main()` at py0c/qd0vm.py:670

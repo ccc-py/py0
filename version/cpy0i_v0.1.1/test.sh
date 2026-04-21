@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BIN="$ROOT/py0i"
+TEST_ROOT="$(cd "$ROOT/../tests" && pwd)"
 
 if [[ ! -x "$BIN" ]]; then
   echo "py0i binary not found, building first..."
@@ -13,7 +14,7 @@ fi
 run_test() {
   local name="$1"
   local expected="$2"
-  local script="$ROOT/tests/$name.py"
+  local script="$TEST_ROOT/$name.py"
 
   echo "[TEST] $name"
   local actual

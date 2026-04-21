@@ -1,0 +1,1 @@
+/* Reserved for later string type expansion. */
