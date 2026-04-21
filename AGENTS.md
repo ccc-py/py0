@@ -57,5 +57,5 @@ qd0vm.py - compiler self-hosting (fails - documented)
 ## Entry points
 
 - py0i: `main()` at py0i/py0i.py:992, `sys.argv[1]` = script path
-- py0c: `main()` at py0c/py0c.py:692, accepts `-o output.qd` flag
-- qd0vm (Python): `main()` at py0c/qd0vm.py:767
+- py0c: `main()` at py0c/py0c.py:761, accepts `-o output.qd` flag
+- qd0vm (Python): `main()` at py0c/qd0vm.py:670

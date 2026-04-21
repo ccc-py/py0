@@ -32,7 +32,7 @@ class QuadEmitter:
     def emit(self, op, arg1="_", arg2="_", result="_", comment=""):
         if comment:
             comment = f"  ; {comment}"
-        self.output.append(f"{op:20}{arg1:40}{arg2:16}{result:16}{comment}")
+        self.output.append(f"{op:20}{arg1:40}{arg2:16} {result:16}{comment}")
     
     def emit_label(self, label):
         self.output.append(f"{label}:")
