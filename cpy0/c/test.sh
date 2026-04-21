@@ -4,8 +4,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BIN="$ROOT/py0i"
-TEST_ROOT="$(cd "$ROOT/../tests" && pwd)"
-PY_HOST_ROOT="$(cd "$ROOT/../py_host" && pwd)"
+TEST_ROOT="$(cd "$ROOT/../../tests" && pwd)"
+PY_HOST_ROOT="$(cd "$ROOT/../py" && pwd)"
 
 if [[ ! -x "$BIN" ]]; then
   echo "py0i binary not found, building first..."

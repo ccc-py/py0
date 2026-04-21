@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BIN="python3 $ROOT/host.py $ROOT/cpy0i.py"
-TEST_ROOT="$(cd "$ROOT/../tests" && pwd)"
+TEST_ROOT="$(cd "$ROOT/../../tests" && pwd)"
 
 run_test() {
   local name="$1"
