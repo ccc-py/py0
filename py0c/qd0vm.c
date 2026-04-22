@@ -75,7 +75,7 @@ typedef struct {
  * 全域狀態 (Global State)
  * ========================================================================= */
 
-Instruction prog[MAX_INS];
+Instruction *prog;
 int prog_size = 0;
 
 char label_names[MAX_LABELS][64];
@@ -86,7 +86,7 @@ Env *global_env = NULL;
 
 Value arg_buffer[256]; // 用於 ARG_PUSH / ARG_POP
 
-CallFrame call_stack[MAX_CALL_STACK];
+CallFrame *call_stack;
 int stack_ptr = 0;
 
 /* ========================================================================= *
@@ -193,7 +193,6 @@ Value native_len(int argc, Value* args) {
  * 解析器 (Parser)
  * ========================================================================= */
 
-// 解析考慮到引號內的空白字元
 void parse_line(char *line, Instruction *ins) {
     strcpy(ins->op, "_"); strcpy(ins->arg1, "_"); strcpy(ins->arg2, "_"); strcpy(ins->res, "_");
     char *ptrs[4] = { ins->op, ins->arg1, ins->arg2, ins->res };
@@ -201,11 +200,11 @@ void parse_line(char *line, Instruction *ins) {
     char *c = line;
     
     while (*c && p_idx < 4) {
-        while (isspace(*c)) c++; // skip whitespace
+        while (isspace(*c)) c++;
         if (!*c) break;
         
         int i = 0;
-        if (*c == '"') { // string literal
+        if (*c == '"') {
             ptrs[p_idx][i++] = *c++;
             while (*c && *c != '"') {
                 if (*c == '\\' && *(c+1)) { ptrs[p_idx][i++] = *c++; }
@@ -314,13 +313,14 @@ void run() {
         else if (strcmp(ins->op, "SUB") == 0) {
             Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
             if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_int(a.as.i - b.as.i));
-            else die("Unsupported operand types for SUB"); // 省略 float 轉換供示範
+            else die("Unsupported operand types for SUB");
         }
         else if (strcmp(ins->op, "MUL") == 0) {
             Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
             if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_int(a.as.i * b.as.i));
             else die("Unsupported operand types for MUL");
         }
+        // --- 比較運算擴充 ---
         else if (strcmp(ins->op, "CMP_GT") == 0) {
             Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
             if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_bool(a.as.i > b.as.i));
@@ -331,11 +331,27 @@ void run() {
             if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_bool(a.as.i < b.as.i));
             else die("Type error in CMP_LT");
         }
+        else if (strcmp(ins->op, "CMP_GE") == 0) {
+            Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
+            if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_bool(a.as.i >= b.as.i));
+            else die("Type error in CMP_GE");
+        }
+        else if (strcmp(ins->op, "CMP_LE") == 0) {
+            Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
+            if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_bool(a.as.i <= b.as.i));
+            else die("Type error in CMP_LE");
+        }
         else if (strcmp(ins->op, "CMP_EQ") == 0) {
             Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
             if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_bool(a.as.i == b.as.i));
             else if (a.type == VAL_STR && b.type == VAL_STR) env_set(env, ins->res, make_bool(strcmp(a.as.s, b.as.s) == 0));
             else env_set(env, ins->res, make_bool(false));
+        }
+        else if (strcmp(ins->op, "CMP_NE") == 0) {
+            Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
+            if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_bool(a.as.i != b.as.i));
+            else if (a.type == VAL_STR && b.type == VAL_STR) env_set(env, ins->res, make_bool(strcmp(a.as.s, b.as.s) != 0));
+            else env_set(env, ins->res, make_bool(true));
         }
         else if (strcmp(ins->op, "NEG") == 0) {
             Value a = env_get(env, ins->arg1);
@@ -371,7 +387,7 @@ void run() {
         else if (strcmp(ins->op, "MAKE_CLOSURE") == 0) {
             Value v; v.type = VAL_CLOSURE;
             strcpy(v.as.closure.label, ins->arg1);
-            v.as.closure.env = env; // 捕獲當前環境
+            v.as.closure.env = env;
             env_set(env, ins->res, v);
         }
         else if (strcmp(ins->op, "CALL") == 0) {
@@ -398,10 +414,8 @@ void run() {
         }
         else if (strcmp(ins->op, "RETURN") == 0) {
             Value ret = env_get(env, ins->arg1);
-            if (stack_ptr == 0) {
-                // 結束主程式
-                break;
-            }
+            if (stack_ptr == 0) break; // 主程式結束
+            
             stack_ptr--;
             pc = call_stack[stack_ptr].return_pc;
             env = call_stack[stack_ptr].saved_env;
@@ -427,13 +441,12 @@ void run() {
         else if (strcmp(ins->op, "STORE_SUBSCRIPT") == 0) {
             Value obj = env_get(env, ins->arg1);
             Value idx = env_get(env, ins->arg2);
-            Value val = env_get(env, ins->res); // 注意：py0c.py 中的 result 欄位在此代表 value
+            Value val = env_get(env, ins->res);
             if (obj.type != VAL_LIST || idx.type != VAL_INT) die("Type error in STORE_SUBSCRIPT");
             if (idx.as.i < 0 || idx.as.i >= obj.as.list.count) die("Index out of bounds");
             obj.as.list.items[idx.as.i] = val;
         }
         else if (strcmp(ins->op, "LABEL") != 0) {
-            // LABEL 已經在前處理階段抓取，略過。
             fprintf(stderr, "Unknown opcode: %s at line %d\n", ins->op, ins->line_no);
             exit(1);
         }
@@ -448,8 +461,19 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    // 動態分配大型陣列以避免 macOS ld 警告
+    prog = (Instruction *)malloc(sizeof(Instruction) * MAX_INS);
+    call_stack = (CallFrame *)malloc(sizeof(CallFrame) * MAX_CALL_STACK);
+
+    if (!prog || !call_stack) {
+        die("Memory allocation failed");
+    }
+
     load_program(argv[1]);
     run();
+
+    free(prog);
+    free(call_stack);
 
     return 0;
 }
