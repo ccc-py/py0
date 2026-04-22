@@ -3,7 +3,7 @@ sys = __import__("sys")
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: cpy0i.py <script.py> [args...]")
+        print("Usage: py0i.py <script.py> [args...]")
         return
     run_path(sys.argv[1])
 
