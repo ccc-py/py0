@@ -4,615 +4,452 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-#define MAX_INSTS 2048
-#define MAX_VARS 512
-#define MAX_FRAMES 128
-#define MAX_BUFFER 1024
+#define MAX_INS 10000
+#define MAX_VARS 256
+#define MAX_LABELS 1000
+#define MAX_CALL_STACK 1024
 
-// --- 虛擬機資料結構 ---
+/* ========================================================================= *
+ * 型別與資料結構 (Types & Data Structures)
+ * ========================================================================= */
 
 typedef enum {
-    VAL_NULL,
-    VAL_INT,
-    VAL_FLOAT,
-    VAL_STR,
-    VAL_BUILTIN,
-    VAL_FUNCTION,
-    VAL_LIST,
-    VAL_DICT,
-    VAL_ITER,
-    VAL_BOUND_METHOD
-} ValueType;
+    VAL_NONE, VAL_INT, VAL_FLOAT, VAL_BOOL, VAL_STR, VAL_LIST, VAL_CLOSURE, VAL_NATIVE
+} ValType;
 
+struct Env;
 struct Value;
-struct ListObj;
-struct DictObj;
-struct IterObj;
 
-typedef struct Value (*BuiltinFunc)(int argc, struct Value* args);
+typedef struct Value (*NativeFunc)(int argc, struct Value* args);
 
 typedef struct Value {
-    ValueType type;
+    ValType type;
     union {
-        int i;
+        long i;
         double f;
-        char* s;
-        BuiltinFunc builtin;
-        int pc;
-        struct ListObj* list;
-        struct DictObj* dict;
-        struct IterObj* iter;
+        bool b;
+        char *s;
         struct {
-            void* obj;
-            char method[32];
-        } bound;
+            struct Value *items;
+            int count;
+            int capacity;
+        } list;
+        struct {
+            char label[64];
+            struct Env *env;
+        } closure;
+        NativeFunc native;
     } as;
 } Value;
 
-typedef struct ListObj {
-    Value* items;
-    int count;
-    int capacity;
-} ListObj;
-
-typedef struct DictEntry {
-    Value key;
-    Value val;
-} DictEntry;
-
-typedef struct DictObj {
-    DictEntry* entries;
-    int count;
-    int capacity;
-} DictObj;
-
-typedef struct IterObj {
-    Value obj;
-    int index;
-} IterObj;
-
-typedef enum {
-    OP_LOAD_NAME, OP_LOAD_CONST, OP_LOAD_ATTR, OP_STORE,
-    OP_DICT_INSERT, OP_BUILD_DICT, OP_LIST_APPEND, OP_BUILD_LIST, OP_SUBSCRIPT,
-    OP_ARG_PUSH, OP_CALL, OP_RETURN, OP_FUNCTION, OP_FUNCTION_END,
-    OP_ENTER_SCOPE, OP_EXIT_SCOPE, OP_PARAM,
-    OP_CMP_EQ, OP_CMP_NE, OP_CMP_LT, OP_CMP_LE, OP_CMP_GT, OP_CMP_GE,
-    OP_AND, OP_OR, OP_NOT, OP_BRANCH_IF_FALSE, OP_JUMP,
-    OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD, OP_NEG,
-    OP_GET_ITER, OP_ITER_NEXT, OP_BRANCH_IF_EXHAUST, OP_LABEL, OP_UNKNOWN
-} Opcode;
-
-typedef struct {
-    Opcode op;
-    char op_str[32];
-    char arg1[64];
-    char arg2[64];
-    char res[64];
-    int lineno;
-} Instruction;
-
+// 變數綁定
 typedef struct {
     char name[64];
     Value val;
-} Var;
+} Binding;
 
-typedef struct {
-    Var vars[MAX_VARS];
+// 環境變數 (Scope)
+typedef struct Env {
+    struct Env *parent;
+    Binding bindings[MAX_VARS];
     int count;
 } Env;
 
+// 指令四元組
 typedef struct {
-    int ret_pc;
-    int env_base;
-    int param_counter;
-    int argc;
-    Value args[32];  // 穩定保存每個函式呼叫的專屬參數
-    char ret_var[64];
+    char op[32];
+    char arg1[128];
+    char arg2[128];
+    char res[128];
+    int line_no;
+} Instruction;
+
+// 呼叫疊
+typedef struct {
+    int return_pc;
+    char return_var[128];
+    Env *saved_env;
 } CallFrame;
 
-// Stack buffers
-typedef struct { int index; Value val; } IndexedItem;
-IndexedItem arg_buffer[MAX_BUFFER];  int arg_sp = 0;
-IndexedItem list_buffer[MAX_BUFFER]; int list_sp = 0;
-DictEntry dict_buffer[MAX_BUFFER];   int dict_sp = 0;
+/* ========================================================================= *
+ * 全域狀態 (Global State)
+ * ========================================================================= */
 
-// 全域狀態
-Instruction program[MAX_INSTS];
-int num_insts = 0;
-Env env_stack[MAX_FRAMES];
-int env_sp = 1;
-CallFrame call_stack[MAX_FRAMES];
-int call_sp = 0;
+Instruction prog[MAX_INS];
+int prog_size = 0;
 
-// --- 輔助函式 ---
+char label_names[MAX_LABELS][64];
+int label_pcs[MAX_LABELS];
+int label_count = 0;
 
-bool value_equals(Value a, Value b) {
-    if (a.type != b.type) return false;
-    if (a.type == VAL_INT) return a.as.i == b.as.i;
-    if (a.type == VAL_FLOAT) return a.as.f == b.as.f;
-    if (a.type == VAL_STR) return strcmp(a.as.s, b.as.s) == 0;
-    return false;
-}
+Env *global_env = NULL;
 
-Value get_var(const char* name) {
-    if (strcmp(name, "_") == 0) return (Value){VAL_NULL, {0}};
-    for (int i = env_sp - 1; i >= 0; i--) {
-        for (int j = 0; j < env_stack[i].count; j++) {
-            if (strcmp(env_stack[i].vars[j].name, name) == 0) {
-                return env_stack[i].vars[j].val;
-            }
-        }
-    }
-    printf("Runtime Error: Undefined variable '%s'\n", name);
+Value arg_buffer[256]; // 用於 ARG_PUSH / ARG_POP
+
+CallFrame call_stack[MAX_CALL_STACK];
+int stack_ptr = 0;
+
+/* ========================================================================= *
+ * 基礎工具函數 (Utilities)
+ * ========================================================================= */
+
+void die(const char *msg) {
+    fprintf(stderr, "Fatal Error: %s\n", msg);
     exit(1);
 }
 
-void set_var(const char* name, Value val) {
+Value make_none() { Value v; v.type = VAL_NONE; return v; }
+Value make_int(long i) { Value v; v.type = VAL_INT; v.as.i = i; return v; }
+Value make_float(double f) { Value v; v.type = VAL_FLOAT; v.as.f = f; return v; }
+Value make_bool(bool b) { Value v; v.type = VAL_BOOL; v.as.b = b; return v; }
+Value make_str(const char *s) { Value v; v.type = VAL_STR; v.as.s = strdup(s); return v; }
+
+Env *env_new(Env *parent) {
+    Env *e = (Env*)malloc(sizeof(Env));
+    e->parent = parent;
+    e->count = 0;
+    return e;
+}
+
+void env_set(Env *e, const char *name, Value val) {
     if (strcmp(name, "_") == 0) return;
-    Env* current_env = &env_stack[env_sp - 1];
-    for (int i = 0; i < current_env->count; i++) {
-        if (strcmp(current_env->vars[i].name, name) == 0) {
-            current_env->vars[i].val = val;
+    for (int i = 0; i < e->count; i++) {
+        if (strcmp(e->bindings[i].name, name) == 0) {
+            e->bindings[i].val = val;
             return;
         }
     }
-    strcpy(current_env->vars[current_env->count].name, name);
-    current_env->vars[current_env->count].val = val;
-    current_env->count++;
+    if (e->count >= MAX_VARS) die("Out of variable slots");
+    strcpy(e->bindings[e->count].name, name);
+    e->bindings[e->count].val = val;
+    e->count++;
 }
 
-// 聰明的字串解析：處理跳脫字元 \n
-Value parse_const(const char* str) {
-    Value v;
-    if (str[0] == '\'' || str[0] == '"') {
-        v.type = VAL_STR;
-        int len = strlen(str);
-        char* buf = malloc(len + 1);
-        int j = 0;
-        for (int i = 1; i < len - 1; i++) {
-            if (str[i] == '\\' && i + 1 < len - 1) {
-                if (str[i+1] == 'n') { buf[j++] = '\n'; i++; }
-                else if (str[i+1] == 't') { buf[j++] = '\t'; i++; }
-                else { buf[j++] = str[i+1]; i++; }
-            } else {
-                buf[j++] = str[i];
+Value env_get(Env *e, const char *name) {
+    for (Env *curr = e; curr != NULL; curr = curr->parent) {
+        for (int i = 0; i < curr->count; i++) {
+            if (strcmp(curr->bindings[i].name, name) == 0) {
+                return curr->bindings[i].val;
             }
         }
-        buf[j] = '\0';
-        v.as.s = buf;
-    } else if (strchr(str, '.')) {
-        v.type = VAL_FLOAT;
-        v.as.f = atof(str);
-    } else {
-        v.type = VAL_INT;
-        v.as.i = atoi(str);
     }
-    return v;
-}
-
-// 內建函式
-Value builtin_print(int argc, Value* args) {
-    for (int i = 0; i < argc; i++) {
-        if (args[i].type == VAL_STR) printf("%s", args[i].as.s);
-        else if (args[i].type == VAL_INT) printf("%d", args[i].as.i);
-        else if (args[i].type == VAL_FLOAT) printf("%g", args[i].as.f);
-    }
-    printf("\n");
-    return (Value){VAL_NULL, {0}};
-}
-
-Value builtin_len(int argc, Value* args) {
-    Value r = {VAL_INT, {0}};
-    if (args[0].type == VAL_LIST) r.as.i = args[0].as.list->count;
-    else if (args[0].type == VAL_DICT) r.as.i = args[0].as.dict->count;
-    else if (args[0].type == VAL_STR) r.as.i = strlen(args[0].as.s);
-    return r;
-}
-
-Value builtin_str(int argc, Value* args) {
-    Value r = {VAL_STR, {0}};
-    char buf[128];
-    if (args[0].type == VAL_INT) sprintf(buf, "%d", args[0].as.i);
-    else if (args[0].type == VAL_FLOAT) sprintf(buf, "%g", args[0].as.f);
-    else if (args[0].type == VAL_STR) return args[0];
-    r.as.s = strdup(buf);
-    return r;
-}
-
-Value builtin_format(int argc, Value* args) {
-    Value val = args[0];
-    Value fmt = args[1];
-    Value r = {VAL_STR, {0}};
-    char buf[128] = {0};
-    if (strcmp(fmt.as.s, ".2f") == 0) {
-        double f = (val.type == VAL_FLOAT) ? val.as.f : (double)val.as.i;
-        sprintf(buf, "%.2f", f);
-    } else {
-        sprintf(buf, "<unsupported fmt>");
-    }
-    r.as.s = strdup(buf);
-    return r;
-}
-
-Value builtin_sum(int argc, Value* args) {
-    Value lst = args[0];
-    double sum = 0;
-    for (int i = 0; i < lst.as.list->count; i++) {
-        Value el = lst.as.list->items[i];
-        if (el.type == VAL_INT) sum += el.as.i;
-        else if (el.type == VAL_FLOAT) sum += el.as.f;
-    }
-    Value r = {VAL_FLOAT, {0}};
-    r.as.f = sum;
-    return r;
-}
-
-void register_builtins() {
-    set_var("print", (Value){VAL_BUILTIN, .as.builtin = builtin_print});
-    set_var("len", (Value){VAL_BUILTIN, .as.builtin = builtin_len});
-    set_var("str", (Value){VAL_BUILTIN, .as.builtin = builtin_str});
-    set_var("format", (Value){VAL_BUILTIN, .as.builtin = builtin_format});
-    set_var("sum", (Value){VAL_BUILTIN, .as.builtin = builtin_sum});
-}
-
-// 跳躍標籤尋找
-int find_label(const char* label_name) {
-    for (int i = 0; i < num_insts; i++) {
-        if (program[i].op == OP_LABEL && strcmp(program[i].arg1, label_name) == 0) return i;
-    }
-    printf("Runtime Error: Label '%s' not found\n", label_name);
+    fprintf(stderr, "Runtime Error: Undefined variable '%s'\n", name);
     exit(1);
 }
 
-// 指令字串對應
-Opcode str_to_opcode(const char* str) {
-    if (strcmp(str, "LOAD_NAME") == 0) return OP_LOAD_NAME;
-    if (strcmp(str, "LOAD_CONST") == 0) return OP_LOAD_CONST;
-    if (strcmp(str, "LOAD_ATTR") == 0) return OP_LOAD_ATTR;
-    if (strcmp(str, "STORE") == 0) return OP_STORE;
-    if (strcmp(str, "DICT_INSERT") == 0) return OP_DICT_INSERT;
-    if (strcmp(str, "BUILD_DICT") == 0) return OP_BUILD_DICT;
-    if (strcmp(str, "LIST_APPEND") == 0) return OP_LIST_APPEND;
-    if (strcmp(str, "BUILD_LIST") == 0) return OP_BUILD_LIST;
-    if (strcmp(str, "SUBSCRIPT") == 0) return OP_SUBSCRIPT;
-    if (strcmp(str, "ARG_PUSH") == 0) return OP_ARG_PUSH;
-    if (strcmp(str, "CALL") == 0) return OP_CALL;
-    if (strcmp(str, "RETURN") == 0) return OP_RETURN;
-    if (strcmp(str, "FUNCTION") == 0) return OP_FUNCTION;
-    if (strcmp(str, "FUNCTION_END") == 0) return OP_FUNCTION_END;
-    if (strcmp(str, "ENTER_SCOPE") == 0) return OP_ENTER_SCOPE;
-    if (strcmp(str, "EXIT_SCOPE") == 0) return OP_EXIT_SCOPE;
-    if (strcmp(str, "PARAM") == 0) return OP_PARAM;
-    if (strcmp(str, "CMP_EQ") == 0) return OP_CMP_EQ;
-    if (strcmp(str, "OR") == 0) return OP_OR;
-    if (strcmp(str, "AND") == 0) return OP_AND;
-    if (strcmp(str, "NOT") == 0) return OP_NOT;
-    if (strcmp(str, "BRANCH_IF_FALSE") == 0) return OP_BRANCH_IF_FALSE;
-    if (strcmp(str, "JUMP") == 0) return OP_JUMP;
-    if (strcmp(str, "ADD") == 0) return OP_ADD;
-    if (strcmp(str, "SUB") == 0) return OP_SUB;
-    if (strcmp(str, "MUL") == 0) return OP_MUL;
-    if (strcmp(str, "DIV") == 0) return OP_DIV;
-    if (strcmp(str, "GET_ITER") == 0) return OP_GET_ITER;
-    if (strcmp(str, "ITER_NEXT") == 0) return OP_ITER_NEXT;
-    if (strcmp(str, "BRANCH_IF_EXHAUST") == 0) return OP_BRANCH_IF_EXHAUST;
-    if (strcmp(str, "LABEL") == 0) return OP_LABEL;
-    return OP_UNKNOWN;
+bool is_truthy(Value v) {
+    switch (v.type) {
+        case VAL_NONE: return false;
+        case VAL_BOOL: return v.as.b;
+        case VAL_INT: return v.as.i != 0;
+        case VAL_FLOAT: return v.as.f != 0.0;
+        case VAL_STR: return strlen(v.as.s) > 0;
+        case VAL_LIST: return v.as.list.count > 0;
+        default: return true;
+    }
 }
 
-// 智慧讀取 Tokens (支援空白與引號)
-void load_program(const char* filename) {
-    FILE* fp = fopen(filename, "r");
-    if (!fp) exit(1);
-    char line[512];
-    int lineno = 1;
-    while (fgets(line, sizeof(line), fp)) {
-        char* comment = strchr(line, ';');
-        if (comment) *comment = '\0';
-        char tokens[4][128] = {"_", "_", "_", "_"};
-        int count = 0;
-        char* p = line;
-        while (*p && count < 4) {
-            while (*p && isspace(*p)) p++;
-            if (!*p) break;
-            int i = 0;
-            if (*p == '\'' || *p == '"') {
-                char quote = *p;
-                tokens[count][i++] = *p++;
-                while (*p && *p != quote) tokens[count][i++] = *p++;
-                if (*p == quote) tokens[count][i++] = *p++;
-                tokens[count][i] = '\0'; count++;
-            } else {
-                while (*p && !isspace(*p)) tokens[count][i++] = *p++;
-                tokens[count][i] = '\0'; count++;
+int resolve_label(const char *name) {
+    for (int i = 0; i < label_count; i++) {
+        if (strcmp(label_names[i], name) == 0) return label_pcs[i];
+    }
+    fprintf(stderr, "Error: Unknown label '%s'\n", name);
+    exit(1);
+}
+
+/* ========================================================================= *
+ * 內建函數 (Built-ins)
+ * ========================================================================= */
+
+void print_value(Value v) {
+    if (v.type == VAL_NONE) printf("None");
+    else if (v.type == VAL_INT) printf("%ld", v.as.i);
+    else if (v.type == VAL_FLOAT) printf("%g", v.as.f);
+    else if (v.type == VAL_BOOL) printf("%s", v.as.b ? "True" : "False");
+    else if (v.type == VAL_STR) printf("%s", v.as.s);
+    else if (v.type == VAL_LIST) printf("<list size=%d>", v.as.list.count);
+    else if (v.type == VAL_CLOSURE) printf("<closure %s>", v.as.closure.label);
+    else if (v.type == VAL_NATIVE) printf("<native func>");
+}
+
+Value native_print(int argc, Value* args) {
+    for (int i = 0; i < argc; i++) {
+        if (i > 0) printf(" ");
+        print_value(args[i]);
+    }
+    printf("\n");
+    return make_none();
+}
+
+Value native_len(int argc, Value* args) {
+    if (argc != 1) die("len() takes exactly 1 argument");
+    if (args[0].type == VAL_STR) return make_int(strlen(args[0].as.s));
+    if (args[0].type == VAL_LIST) return make_int(args[0].as.list.count);
+    die("Object of type has no len()");
+    return make_none();
+}
+
+/* ========================================================================= *
+ * 解析器 (Parser)
+ * ========================================================================= */
+
+// 解析考慮到引號內的空白字元
+void parse_line(char *line, Instruction *ins) {
+    strcpy(ins->op, "_"); strcpy(ins->arg1, "_"); strcpy(ins->arg2, "_"); strcpy(ins->res, "_");
+    char *ptrs[4] = { ins->op, ins->arg1, ins->arg2, ins->res };
+    int p_idx = 0;
+    char *c = line;
+    
+    while (*c && p_idx < 4) {
+        while (isspace(*c)) c++; // skip whitespace
+        if (!*c) break;
+        
+        int i = 0;
+        if (*c == '"') { // string literal
+            ptrs[p_idx][i++] = *c++;
+            while (*c && *c != '"') {
+                if (*c == '\\' && *(c+1)) { ptrs[p_idx][i++] = *c++; }
+                ptrs[p_idx][i++] = *c++;
+            }
+            if (*c == '"') ptrs[p_idx][i++] = *c++;
+        } else {
+            while (*c && !isspace(*c)) {
+                ptrs[p_idx][i++] = *c++;
             }
         }
-        if (count == 0) { lineno++; continue; }
-        Instruction inst = { .op = OP_UNKNOWN, .arg1 = "_", .arg2 = "_", .res = "_", .lineno = lineno };
-        if (strstr(tokens[0], "::")) {
-            tokens[0][strlen(tokens[0]) - 2] = '\0';
-            inst.op = OP_LABEL; strcpy(inst.arg1, tokens[0]);
-        } else {
-            inst.op = str_to_opcode(tokens[0]);
-            strcpy(inst.op_str, tokens[0]);
-            if (count > 1) strcpy(inst.arg1, tokens[1]);
-            if (count > 2) strcpy(inst.arg2, tokens[2]);
-            if (count > 3) strcpy(inst.res, tokens[3]);
-        }
-        program[num_insts++] = inst;
-        lineno++;
+        ptrs[p_idx][i] = '\0';
+        p_idx++;
     }
-    fclose(fp);
 }
 
-// --- 執行核心 ---
+void load_program(const char *filename) {
+    FILE *f = fopen(filename, "r");
+    if (!f) die("Cannot open input file");
 
-// 排序輔助
-int cmp_indexed(const void* a, const void* b) {
-    return ((IndexedItem*)a)->index - ((IndexedItem*)b)->index;
+    char line[512];
+    int line_no = 1;
+    while (fgets(line, sizeof(line), f)) {
+        if (line[0] == '\n' || line[0] == '#' || line[0] == '\0') {
+            line_no++;
+            continue;
+        }
+
+        Instruction ins;
+        ins.line_no = line_no;
+        parse_line(line, &ins);
+
+        if (strcmp(ins.op, "LABEL") == 0) {
+            strcpy(label_names[label_count], ins.arg1);
+            label_pcs[label_count] = prog_size;
+            label_count++;
+        }
+        
+        prog[prog_size++] = ins;
+        line_no++;
+    }
+    fclose(f);
+}
+
+/* ========================================================================= *
+ * 執行引擎 (VM Execution)
+ * ========================================================================= */
+
+Value eval_const(const char *str) {
+    if (strcmp(str, "None") == 0) return make_none();
+    if (strcmp(str, "True") == 0) return make_bool(true);
+    if (strcmp(str, "False") == 0) return make_bool(false);
+    if (str[0] == '"') {
+        char buf[256]; int j = 0;
+        for (int i = 1; str[i] != '"' && str[i] != '\0'; i++) {
+            if (str[i] == '\\' && str[i+1] == 'n') { buf[j++] = '\n'; i++; }
+            else { buf[j++] = str[i]; }
+        }
+        buf[j] = '\0';
+        return make_str(buf);
+    }
+    if (strchr(str, '.')) return make_float(atof(str));
+    return make_int(atol(str));
 }
 
 void run() {
-    register_builtins();
+    global_env = env_new(NULL);
+    
+    // 註冊內建函數
+    Value p_func; p_func.type = VAL_NATIVE; p_func.as.native = native_print;
+    env_set(global_env, "print", p_func);
+    
+    Value l_func; l_func.type = VAL_NATIVE; l_func.as.native = native_len;
+    env_set(global_env, "len", l_func);
+
     int pc = 0;
-    while (pc < num_insts) {
-        Instruction* inst = &program[pc];
-        #define V(arg) get_var(arg)
-        #define LIT(arg) parse_const(arg)
+    Env *env = global_env;
 
-        switch (inst->op) {
-            case OP_LOAD_NAME: set_var(inst->res, V(inst->arg1)); break;
-            case OP_LOAD_CONST: set_var(inst->res, LIT(inst->arg1)); break;
-            case OP_STORE: set_var(inst->res, V(inst->arg1)); break;
-
-            case OP_LOAD_ATTR: {
-                Value obj = V(inst->arg1);
-                if (obj.type == VAL_LIST && strcmp(inst->arg2, "append") == 0) {
-                    Value r = {VAL_BOUND_METHOD, {0}};
-                    r.as.bound.obj = obj.as.list;
-                    strcpy(r.as.bound.method, "append");
-                    set_var(inst->res, r);
-                }
-                break;
-            }
-
-            case OP_DICT_INSERT: {
-                dict_buffer[dict_sp].key = V(inst->arg1);
-                dict_buffer[dict_sp].val = V(inst->arg2);
-                dict_sp++;
-                break;
-            }
-
-            case OP_BUILD_DICT: {
-                int count = LIT(inst->arg1).as.i;
-                DictObj* d = malloc(sizeof(DictObj));
-                d->count = count; d->capacity = count;
-                d->entries = malloc(sizeof(DictEntry) * count);
-                for (int i = 0; i < count; i++) d->entries[i] = dict_buffer[dict_sp - count + i];
-                dict_sp -= count;
-                Value r = {VAL_DICT, .as.dict = d};
-                set_var(inst->res, r);
-                break;
-            }
-
-            case OP_LIST_APPEND: {
-                list_buffer[list_sp].val = V(inst->arg1);
-                list_buffer[list_sp].index = LIT(inst->arg2).as.i;
-                list_sp++;
-                break;
-            }
-
-            case OP_BUILD_LIST: {
-                int count = LIT(inst->arg1).as.i;
-                IndexedItem* start = &list_buffer[list_sp - count];
-                qsort(start, count, sizeof(IndexedItem), cmp_indexed);
-                ListObj* l = malloc(sizeof(ListObj));
-                l->count = count; l->capacity = count + 10;
-                l->items = malloc(sizeof(Value) * l->capacity);
-                for (int i = 0; i < count; i++) l->items[i] = start[i].val;
-                list_sp -= count;
-                Value r = {VAL_LIST, .as.list = l};
-                set_var(inst->res, r);
-                break;
-            }
-
-            case OP_SUBSCRIPT: {
-                Value obj = V(inst->arg1);
-                Value key = V(inst->arg2);
-                Value r = {VAL_NULL, {0}};
-                if (obj.type == VAL_LIST) r = obj.as.list->items[key.as.i];
-                else if (obj.type == VAL_DICT) {
-                    for (int i = 0; i < obj.as.dict->count; i++) {
-                        if (value_equals(obj.as.dict->entries[i].key, key)) {
-                            r = obj.as.dict->entries[i].val; break;
-                        }
-                    }
-                }
-                set_var(inst->res, r);
-                break;
-            }
-
-            case OP_ADD: {
-                Value v1 = V(inst->arg1), v2 = V(inst->arg2);
-                Value r;
-                if (v1.type == VAL_STR && v2.type == VAL_STR) {
-                    char* buf = malloc(strlen(v1.as.s) + strlen(v2.as.s) + 1);
-                    strcpy(buf, v1.as.s); strcat(buf, v2.as.s);
-                    r.type = VAL_STR; r.as.s = buf;
-                } else {
-                    double f1 = (v1.type==VAL_FLOAT)?v1.as.f:v1.as.i;
-                    double f2 = (v2.type==VAL_FLOAT)?v2.as.f:v2.as.i;
-                    r.type = VAL_FLOAT; r.as.f = f1 + f2;
-                }
-                set_var(inst->res, r);
-                break;
-            }
-
-            case OP_SUB: {
-                Value v1 = V(inst->arg1), v2 = V(inst->arg2);
-                if (v1.type == VAL_FLOAT || v2.type == VAL_FLOAT) {
-                    double f1 = (v1.type==VAL_FLOAT)?v1.as.f:v1.as.i;
-                    double f2 = (v2.type==VAL_FLOAT)?v2.as.f:v2.as.i;
-                    set_var(inst->res, (Value){VAL_FLOAT, .as.f = f1 - f2});
-                } else {
-                    set_var(inst->res, (Value){VAL_INT, .as.i = v1.as.i - v2.as.i});
-                }
-                break;
-            }
-
-            case OP_MUL: {
-                Value v1 = V(inst->arg1), v2 = V(inst->arg2);
-                if (v1.type == VAL_FLOAT || v2.type == VAL_FLOAT) {
-                    double f1 = (v1.type==VAL_FLOAT)?v1.as.f:v1.as.i;
-                    double f2 = (v2.type==VAL_FLOAT)?v2.as.f:v2.as.i;
-                    set_var(inst->res, (Value){VAL_FLOAT, .as.f = f1 * f2});
-                } else {
-                    set_var(inst->res, (Value){VAL_INT, .as.i = v1.as.i * v2.as.i});
-                }
-                break;
-            }
-
-            case OP_DIV: {
-                Value v1 = V(inst->arg1), v2 = V(inst->arg2);
-                double f1 = (v1.type==VAL_FLOAT)?v1.as.f:v1.as.i;
-                double f2 = (v2.type==VAL_FLOAT)?v2.as.f:v2.as.i;
-                Value r = {VAL_FLOAT, .as.f = f1 / f2};
-                set_var(inst->res, r);
-                break;
-            }
-
-            case OP_CMP_EQ: {
-                Value r = {VAL_INT, .as.i = value_equals(V(inst->arg1), V(inst->arg2))};
-                set_var(inst->res, r);
-                break;
-            }
-
-            case OP_OR: {
-                Value v1 = V(inst->arg1), v2 = V(inst->arg2);
-                int i1 = (v1.type==VAL_INT)?v1.as.i:0;
-                int i2 = (v2.type==VAL_INT)?v2.as.i:0;
-                Value r = {VAL_INT, .as.i = i1 || i2};
-                set_var(inst->res, r);
-                break;
-            }
-
-            case OP_AND: {
-                Value v1 = V(inst->arg1), v2 = V(inst->arg2);
-                int i1 = (v1.type==VAL_INT)?v1.as.i:0;
-                int i2 = (v2.type==VAL_INT)?v2.as.i:0;
-                Value r = {VAL_INT, .as.i = i1 && i2};
-                set_var(inst->res, r);
-                break;
-            }
-
-            case OP_BRANCH_IF_FALSE: {
-                Value cond = V(inst->arg1);
-                if (!cond.as.i) pc = find_label(inst->res) - 1;
-                break;
-            }
-            case OP_JUMP: pc = find_label(inst->arg1) - 1; break;
-
-            case OP_GET_ITER: {
-                IterObj* it = malloc(sizeof(IterObj));
-                it->obj = V(inst->arg1);
-                it->index = 0;
-                Value r = {VAL_ITER, .as.iter = it};
-                set_var(inst->res, r);
-                break;
-            }
-            case OP_ITER_NEXT: {
-                IterObj* it = V(inst->arg1).as.iter;
-                bool exhausted = true;
-                Value r = {VAL_NULL, {0}};
-                if (it->obj.type == VAL_LIST && it->index < it->obj.as.list->count) {
-                    r = it->obj.as.list->items[it->index++];
-                    exhausted = false;
-                }
-                char ext_name[128];
-                sprintf(ext_name, "__exhaust_%s", inst->arg1);
-                Value ext_val = {VAL_INT, .as.i = exhausted};
-                set_var(ext_name, ext_val);
-                if (!exhausted) set_var(inst->res, r);
-                break;
-            }
-            case OP_BRANCH_IF_EXHAUST: {
-                char ext_name[128];
-                sprintf(ext_name, "__exhaust_%s", inst->arg1);
-                if (get_var(ext_name).as.i) pc = find_label(inst->res) - 1;
-                break;
-            }
-
-            case OP_ARG_PUSH:
-                arg_buffer[arg_sp].val = V(inst->arg1);
-                arg_buffer[arg_sp].index = LIT(inst->arg2).as.i;
-                arg_sp++;
-                break;
-
-            case OP_CALL: {
-                Value func = V(inst->arg1);
-                int argc = LIT(inst->arg2).as.i;
-                IndexedItem* start = &arg_buffer[arg_sp - argc];
-                qsort(start, argc, sizeof(IndexedItem), cmp_indexed);
-                Value args[32];
-                for (int i = 0; i < argc; i++) args[i] = start[i].val;
-                arg_sp -= argc;
-
-                if (func.type == VAL_BUILTIN) {
-                    set_var(inst->res, func.as.builtin(argc, args));
-                } else if (func.type == VAL_BOUND_METHOD) {
-                    if (strcmp(func.as.bound.method, "append") == 0) {
-                        ListObj* lst = (ListObj*)func.as.bound.obj;
-                        if (lst->count >= lst->capacity) {
-                            lst->capacity += 10;
-                            lst->items = realloc(lst->items, sizeof(Value) * lst->capacity);
-                        }
-                        lst->items[lst->count++] = args[0];
-                    }
-                } else if (func.type == VAL_FUNCTION) {
-                    CallFrame* frame = &call_stack[call_sp++];
-                    frame->ret_pc = pc + 1; frame->env_base = env_sp;
-                    frame->param_counter = 0; strcpy(frame->ret_var, inst->res);
-                    // 保存專屬參數，不依賴外層的 stack buffer
-                    frame->argc = argc;
-                    for(int i=0; i<argc; i++) frame->args[i] = args[i];
-                    pc = func.as.pc - 1;
-                }
-                break;
-            }
-
-            case OP_FUNCTION: {
-                Value f = {VAL_FUNCTION, .as.pc = pc + 1};
-                set_var(inst->res, f);
-                while (program[pc].op != OP_FUNCTION_END) pc++;
-                break;
-            }
-            case OP_PARAM: {
-                // 從專屬的 CallFrame 參數中提取
-                CallFrame* frame = &call_stack[call_sp - 1];
-                set_var(inst->res, frame->args[frame->param_counter++]);
-                break;
-            }
-            case OP_ENTER_SCOPE: env_stack[env_sp++].count = 0; break;
-            case OP_EXIT_SCOPE: env_sp--; break;
-            case OP_RETURN: {
-                Value ret_val = V(inst->arg1);
-                CallFrame* frame = &call_stack[--call_sp];
-                env_sp = frame->env_base;
-                set_var(frame->ret_var, ret_val);
-                pc = frame->ret_pc - 1;
-                break;
-            }
-            case OP_LABEL: case OP_FUNCTION_END: break;
-            default: break;
+    while (pc < prog_size) {
+        Instruction *ins = &prog[pc];
+        
+        if (strcmp(ins->op, "LOAD_CONST") == 0) {
+            env_set(env, ins->res, eval_const(ins->arg1));
         }
+        else if (strcmp(ins->op, "LOAD_NAME") == 0) {
+            env_set(env, ins->res, env_get(env, ins->arg1));
+        }
+        else if (strcmp(ins->op, "STORE") == 0) {
+            env_set(env, ins->res, env_get(env, ins->arg1));
+        }
+        else if (strcmp(ins->op, "ADD") == 0) {
+            Value a = env_get(env, ins->arg1);
+            Value b = env_get(env, ins->arg2);
+            if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_int(a.as.i + b.as.i));
+            else if (a.type == VAL_FLOAT || b.type == VAL_FLOAT) {
+                double fa = (a.type == VAL_INT) ? a.as.i : a.as.f;
+                double fb = (b.type == VAL_INT) ? b.as.i : b.as.f;
+                env_set(env, ins->res, make_float(fa + fb));
+            }
+            else if (a.type == VAL_STR && b.type == VAL_STR) {
+                char buf[512];
+                snprintf(buf, sizeof(buf), "%s%s", a.as.s, b.as.s);
+                env_set(env, ins->res, make_str(buf));
+            } else die("Unsupported operand types for ADD");
+        }
+        else if (strcmp(ins->op, "SUB") == 0) {
+            Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
+            if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_int(a.as.i - b.as.i));
+            else die("Unsupported operand types for SUB"); // 省略 float 轉換供示範
+        }
+        else if (strcmp(ins->op, "MUL") == 0) {
+            Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
+            if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_int(a.as.i * b.as.i));
+            else die("Unsupported operand types for MUL");
+        }
+        else if (strcmp(ins->op, "CMP_GT") == 0) {
+            Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
+            if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_bool(a.as.i > b.as.i));
+            else die("Type error in CMP_GT");
+        }
+        else if (strcmp(ins->op, "CMP_LT") == 0) {
+            Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
+            if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_bool(a.as.i < b.as.i));
+            else die("Type error in CMP_LT");
+        }
+        else if (strcmp(ins->op, "CMP_EQ") == 0) {
+            Value a = env_get(env, ins->arg1); Value b = env_get(env, ins->arg2);
+            if (a.type == VAL_INT && b.type == VAL_INT) env_set(env, ins->res, make_bool(a.as.i == b.as.i));
+            else if (a.type == VAL_STR && b.type == VAL_STR) env_set(env, ins->res, make_bool(strcmp(a.as.s, b.as.s) == 0));
+            else env_set(env, ins->res, make_bool(false));
+        }
+        else if (strcmp(ins->op, "NEG") == 0) {
+            Value a = env_get(env, ins->arg1);
+            if (a.type == VAL_INT) env_set(env, ins->res, make_int(-a.as.i));
+            else die("Type error in NEG");
+        }
+        else if (strcmp(ins->op, "JUMP") == 0) {
+            pc = resolve_label(ins->arg1);
+            continue;
+        }
+        else if (strcmp(ins->op, "BRANCH_IF_FALSE") == 0) {
+            Value cond = env_get(env, ins->arg1);
+            if (!is_truthy(cond)) {
+                pc = resolve_label(ins->res);
+                continue;
+            }
+        }
+        else if (strcmp(ins->op, "BRANCH_IF_TRUE") == 0) {
+            Value cond = env_get(env, ins->arg1);
+            if (is_truthy(cond)) {
+                pc = resolve_label(ins->res);
+                continue;
+            }
+        }
+        else if (strcmp(ins->op, "ARG_PUSH") == 0) {
+            int idx = atoi(ins->arg2);
+            arg_buffer[idx] = env_get(env, ins->arg1);
+        }
+        else if (strcmp(ins->op, "ARG_POP") == 0) {
+            int idx = atoi(ins->arg2);
+            env_set(env, ins->res, arg_buffer[idx]);
+        }
+        else if (strcmp(ins->op, "MAKE_CLOSURE") == 0) {
+            Value v; v.type = VAL_CLOSURE;
+            strcpy(v.as.closure.label, ins->arg1);
+            v.as.closure.env = env; // 捕獲當前環境
+            env_set(env, ins->res, v);
+        }
+        else if (strcmp(ins->op, "CALL") == 0) {
+            Value func = env_get(env, ins->arg1);
+            int argc = atoi(ins->arg2);
+
+            if (func.type == VAL_NATIVE) {
+                Value ret = func.as.native(argc, arg_buffer);
+                env_set(env, ins->res, ret);
+            } 
+            else if (func.type == VAL_CLOSURE) {
+                if (stack_ptr >= MAX_CALL_STACK) die("Call stack overflow");
+                call_stack[stack_ptr].return_pc = pc + 1;
+                strcpy(call_stack[stack_ptr].return_var, ins->res);
+                call_stack[stack_ptr].saved_env = env;
+                stack_ptr++;
+
+                env = env_new(func.as.closure.env);
+                pc = resolve_label(func.as.closure.label);
+                continue;
+            } else {
+                die("Attempt to call non-callable object");
+            }
+        }
+        else if (strcmp(ins->op, "RETURN") == 0) {
+            Value ret = env_get(env, ins->arg1);
+            if (stack_ptr == 0) {
+                // 結束主程式
+                break;
+            }
+            stack_ptr--;
+            pc = call_stack[stack_ptr].return_pc;
+            env = call_stack[stack_ptr].saved_env;
+            env_set(env, call_stack[stack_ptr].return_var, ret);
+            continue;
+        }
+        else if (strcmp(ins->op, "BUILD_LIST") == 0) {
+            int count = atoi(ins->arg1);
+            Value list_val; list_val.type = VAL_LIST;
+            list_val.as.list.count = count;
+            list_val.as.list.capacity = count > 0 ? count : 4;
+            list_val.as.list.items = (Value*)malloc(sizeof(Value) * list_val.as.list.capacity);
+            for (int i = 0; i < count; i++) list_val.as.list.items[i] = arg_buffer[i];
+            env_set(env, ins->res, list_val);
+        }
+        else if (strcmp(ins->op, "LOAD_SUBSCRIPT") == 0) {
+            Value obj = env_get(env, ins->arg1);
+            Value idx = env_get(env, ins->arg2);
+            if (obj.type != VAL_LIST || idx.type != VAL_INT) die("Type error in SUBSCRIPT");
+            if (idx.as.i < 0 || idx.as.i >= obj.as.list.count) die("Index out of bounds");
+            env_set(env, ins->res, obj.as.list.items[idx.as.i]);
+        }
+        else if (strcmp(ins->op, "STORE_SUBSCRIPT") == 0) {
+            Value obj = env_get(env, ins->arg1);
+            Value idx = env_get(env, ins->arg2);
+            Value val = env_get(env, ins->res); // 注意：py0c.py 中的 result 欄位在此代表 value
+            if (obj.type != VAL_LIST || idx.type != VAL_INT) die("Type error in STORE_SUBSCRIPT");
+            if (idx.as.i < 0 || idx.as.i >= obj.as.list.count) die("Index out of bounds");
+            obj.as.list.items[idx.as.i] = val;
+        }
+        else if (strcmp(ins->op, "LABEL") != 0) {
+            // LABEL 已經在前處理階段抓取，略過。
+            fprintf(stderr, "Unknown opcode: %s at line %d\n", ins->op, ins->line_no);
+            exit(1);
+        }
+        
         pc++;
     }
 }
 
-int main(int argc, char** argv) {
-    if (argc < 2) return 1;
-    env_stack[0].count = 0;
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        printf("Usage: %s <program.qd>\n", argv[0]);
+        return 1;
+    }
+
     load_program(argv[1]);
     run();
+
     return 0;
 }
